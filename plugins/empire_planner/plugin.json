@@ -1,0 +1,10 @@
+{
+  "id": "empire_planner",
+  "name": "Empire Planner",
+  "description": "Set goals, track member progress, monitor claim health and treasury for your empire.",
+  "icon": "⚔",
+  "author": "Your Crew",
+  "route_prefix": "/empire",
+  "tag": "ADMIN",
+  "version": "1.0"
+}

@@ -1,0 +1,10 @@
+{
+  "id": "my_plugin",
+  "name": "My Plugin",
+  "description": "A short description of what this plugin does.",
+  "icon": "🔧",
+  "author": "YourName",
+  "route_prefix": "/my_plugin",
+  "tag": "NEW",
+  "version": "1.0"
+}

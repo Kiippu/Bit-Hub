@@ -1,0 +1,10 @@
+{
+  "id": "player_lookup",
+  "name": "Player Lookup",
+  "description": "Search any player's skills, XP progress, settlement, and level breakdown.",
+  "icon": "🧙",
+  "author": "Hub Core",
+  "route_prefix": "/player",
+  "tag": "XP",
+  "version": "1.0"
+}

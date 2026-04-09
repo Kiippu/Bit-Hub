@@ -1,0 +1,10 @@
+{
+  "id": "bitmarket",
+  "name": "BitMarket Terminal",
+  "description": "Full trading terminal — price charts, order book, trade history, and arbitrage deals.",
+  "icon": "📈",
+  "author": "Your Crew",
+  "route_prefix": "/bitmarket",
+  "tag": "LIVE",
+  "version": "2.0"
+}

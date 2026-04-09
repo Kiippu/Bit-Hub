@@ -1,0 +1,944 @@
+{% extends "base.html" %}
+{% block title %}Empire Planner — BitCraft Hub{% endblock %}
+
+{% block head %}
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+.ep { font-family: 'Inter', sans-serif; }
+
+/* ── Flash messages ── */
+.flash-wrap { margin-bottom: 20px; }
+.flash-msg {
+  padding: 11px 16px; border-radius: 8px; font-size: 13px; margin-bottom: 8px;
+  display: flex; align-items: center; gap: 10px;
+}
+.flash-success { background: rgba(42,138,122,0.15); border: 1px solid var(--teal); color: var(--teal-light); }
+.flash-error   { background: rgba(212,98,26,0.12);  border: 1px solid var(--amber); color: #f09060; }
+.flash-info    { background: rgba(200,146,42,0.1);  border: 1px solid var(--gold-dim); color: var(--gold); }
+
+/* ── Claim search ── */
+.claim-search-wrap { display: flex; gap: 10px; margin-bottom: 28px; max-width: 560px; }
+.claim-search-wrap input {
+  flex: 1; background: var(--bg-raised); border: 1px solid var(--border);
+  border-radius: 8px; padding: 12px 16px; color: var(--text-primary);
+  font-family: 'Inter', sans-serif; font-size: 15px; outline: none; transition: border-color 0.2s;
+}
+.claim-search-wrap input:focus { border-color: var(--gold-dim); }
+.claim-search-wrap input::placeholder { color: var(--text-muted); }
+
+/* ── Identity bar ── */
+.identity-bar {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  background: var(--bg-raised); border: 1px solid var(--border); border-radius: 8px;
+  padding: 10px 16px; margin-bottom: 20px; font-size: 13px;
+}
+.identity-bar .who { color: var(--text-secondary); }
+.identity-bar .who strong { color: var(--text-primary); }
+.identity-bar .role-badge {
+  padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+}
+.role-emperor { background: rgba(200,146,42,0.15); border: 1px solid var(--gold-dim); color: var(--gold); }
+.role-admin   { background: rgba(42,138,122,0.15); border: 1px solid var(--teal); color: var(--teal-light); }
+.role-member  { background: var(--bg-surface); border: 1px solid var(--border); color: var(--text-muted); }
+.identity-bar .spacer { flex: 1; }
+
+/* ── Auth box (verify identity) ── */
+.auth-box {
+  background: var(--bg-raised); border: 1px solid var(--border); border-radius: 10px;
+  padding: 20px 24px; margin-bottom: 20px;
+}
+.auth-box-title { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
+.auth-box-sub   { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5; }
+.auth-code-display {
+  background: var(--bg-deep); border: 1px solid var(--gold-dim); border-radius: 8px;
+  padding: 14px 20px; font-family: monospace; font-size: 22px; font-weight: 700;
+  color: var(--gold-light); letter-spacing: 0.2em; text-align: center; margin-bottom: 12px;
+}
+.auth-code-instruction {
+  background: var(--bg-surface); border: 1px solid var(--border); border-radius: 6px;
+  padding: 10px 14px; font-size: 12px; color: var(--text-secondary); margin-bottom: 14px; line-height: 1.6;
+}
+.auth-code-instruction code {
+  background: var(--bg-deep); border: 1px solid var(--border); border-radius: 3px;
+  padding: 1px 6px; color: var(--gold); font-size: 13px;
+}
+
+/* ── Buttons ── */
+.ep-btn {
+  padding: 10px 20px; border-radius: 7px; border: none; cursor: pointer;
+  font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600;
+  transition: all 0.18s; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px;
+}
+.ep-btn-primary  { background: var(--gold-dim); color: #fff; }
+.ep-btn-primary:hover  { background: var(--gold); }
+.ep-btn-ghost    { background: var(--bg-raised); border: 1px solid var(--border); color: var(--text-secondary); }
+.ep-btn-ghost:hover    { border-color: var(--gold-dim); color: var(--gold); }
+.ep-btn-teal     { background: rgba(42,138,122,0.18); border: 1px solid var(--teal); color: var(--teal-light); }
+.ep-btn-teal:hover     { background: rgba(42,138,122,0.3); }
+.ep-btn-danger   { background: rgba(255,77,106,0.1); border: 1px solid #7a2222; color: #f06060; }
+.ep-btn-danger:hover   { background: rgba(255,77,106,0.2); }
+.ep-btn-sm       { padding: 6px 14px; font-size: 12px; }
+
+/* ── Claim hero ── */
+.claim-hero {
+  background: var(--bg-raised); border: 1px solid var(--border); border-radius: 12px;
+  padding: 22px 26px; margin-bottom: 20px; position: relative; overflow: hidden;
+  animation: fadeUp 0.3s ease both;
+}
+.claim-hero::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, var(--gold-dim), var(--gold-light), var(--gold-dim));
+}
+.claim-hero-top { display: flex; align-items: flex-start; gap: 20px; flex-wrap: wrap; }
+.claim-hero-title { font-size: 22px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; }
+.claim-hero-meta  { display: flex; flex-wrap: wrap; gap: 7px; }
+.meta-chip {
+  background: var(--bg-surface); border: 1px solid var(--border); border-radius: 6px;
+  padding: 3px 10px; font-size: 12px; color: var(--text-secondary);
+}
+.meta-chip.gold { border-color: var(--gold-dim); color: var(--gold); }
+.meta-chip.teal { border-color: var(--teal); color: var(--teal-light); }
+.meta-chip.red  { border-color: #7a2222; color: #f06060; }
+.meta-chip.warn { border-color: #7a5500; color: #e0a030; }
+.claim-hero-stats { margin-left: auto; display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+.hero-stat {
+  background: var(--bg-surface); border: 1px solid var(--border); border-radius: 10px;
+  padding: 11px 16px; text-align: center; min-width: 85px;
+}
+.hero-stat-val { font-size: 19px; font-weight: 700; color: var(--gold-light); letter-spacing: -0.3px; }
+.hero-stat-lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); margin-top: 2px; }
+
+/* Supply bar */
+.supply-bar-wrap { margin-top: 14px; }
+.supply-bar-row { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); margin-bottom: 5px; }
+.supply-bar-bg { background: var(--bg-deep); border-radius: 4px; height: 5px; overflow: hidden; }
+.supply-bar-fill { height: 100%; border-radius: 4px; }
+.supply-ok       .supply-bar-fill { background: linear-gradient(90deg, var(--teal), var(--teal-light)); }
+.supply-warning  .supply-bar-fill { background: linear-gradient(90deg, #7a5500, #e0a030); }
+.supply-critical .supply-bar-fill { background: linear-gradient(90deg, #7a0000, #f06060); }
+
+/* ── Tabs ── */
+.ep-tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--border); margin-bottom: 22px; }
+.ep-tab {
+  padding: 10px 18px; font-size: 13px; font-weight: 500; color: var(--text-muted); cursor: pointer;
+  border-bottom: 2px solid transparent; transition: all 0.18s;
+  background: none; border-top: none; border-left: none; border-right: none; margin-bottom: -1px;
+  font-family: 'Inter', sans-serif;
+}
+.ep-tab:hover { color: var(--text-primary); }
+.ep-tab.active { color: var(--gold-light); border-bottom-color: var(--gold); }
+.ep-tab-section { display: none; }
+.ep-tab-section.active { display: block; }
+
+/* ── Cards ── */
+.ep-card {
+  background: var(--bg-raised); border: 1px solid var(--border); border-radius: 10px;
+  padding: 20px 22px; margin-bottom: 16px; animation: fadeUp 0.3s ease both;
+}
+.ep-card-title {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--gold); margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+}
+.ep-card-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* ── Two-col layout ── */
+.ep-grid { display: grid; grid-template-columns: 1fr 320px; gap: 18px; align-items: start; }
+@media (max-width: 860px) { .ep-grid { grid-template-columns: 1fr; } }
+
+/* ── Progress cards ── */
+.progress-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 600px) { .progress-grid { grid-template-columns: 1fr; } }
+.progress-card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
+.progress-card-title { font-size: 11px; font-weight: 600; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: 6px; }
+.progress-card-val   { font-size: 21px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.3px; }
+.progress-card-sub   { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.mini-bar { background: var(--bg-deep); border-radius: 3px; height: 4px; margin-top: 8px; overflow: hidden; }
+.mini-bar-fill      { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--gold-dim), var(--gold)); }
+.mini-bar-fill.teal { background: linear-gradient(90deg, var(--teal), var(--teal-light)); }
+
+/* ── Goals form ── */
+.goal-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+.goal-label { font-size: 13px; color: var(--text-secondary); min-width: 150px; flex-shrink: 0; }
+.goal-input, .goal-select {
+  background: var(--bg-surface); border: 1px solid var(--border); border-radius: 6px;
+  padding: 8px 12px; color: var(--text-primary); font-family: 'Inter', sans-serif; font-size: 13px;
+  outline: none; transition: border-color 0.2s;
+}
+.goal-input  { flex: 1; min-width: 80px; max-width: 180px; }
+.goal-select { flex: 1; min-width: 140px; max-width: 220px; cursor: pointer; }
+.goal-input:focus, .goal-select:focus { border-color: var(--gold-dim); }
+.goal-current { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+.goal-hint { font-size: 11px; color: var(--text-muted); width: 100%; padding-left: 160px; margin-top: -6px; }
+
+/* ── Custom goals ── */
+.custom-goal-item {
+  display: flex; align-items: center; gap: 10px; background: var(--bg-surface);
+  border: 1px solid var(--border); border-radius: 7px; padding: 9px 12px; margin-bottom: 7px;
+}
+.custom-goal-item span { flex: 1; font-size: 13px; color: var(--text-secondary); }
+.custom-goal-item .by  { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+.custom-goal-del { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 18px; line-height: 1; padding: 0 2px; }
+.custom-goal-del:hover { color: #f06060; }
+.custom-goal-add { display: flex; gap: 8px; margin-top: 6px; }
+
+/* ── Member table ── */
+.member-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.member-table th {
+  font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-muted);
+  padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border); font-weight: 500;
+}
+.member-table td { padding: 9px 10px; border-bottom: 1px solid rgba(42,58,80,0.4); vertical-align: middle; }
+.member-table tr:last-child td { border-bottom: none; }
+.member-table tr:hover td { background: var(--bg-hover); }
+.member-name { font-weight: 500; color: var(--text-primary); }
+
+.skill-badge {
+  display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px;
+  font-weight: 600; min-width: 32px; text-align: center;
+}
+.skill-met   { background: rgba(42,138,122,0.2); color: var(--teal-light); border: 1px solid var(--teal); }
+.skill-close { background: rgba(200,146,42,0.15); color: var(--gold); border: 1px solid var(--gold-dim); }
+.skill-low   { background: rgba(255,77,106,0.1); color: #f06060; border: 1px solid #7a2222; }
+.skill-none  { background: var(--bg-surface); color: var(--text-muted); border: 1px solid var(--border); }
+
+/* ── Admin panel ── */
+.admin-row {
+  display: flex; align-items: center; gap: 12px; padding: 10px 0;
+  border-bottom: 1px solid rgba(42,58,80,0.4); font-size: 13px;
+}
+.admin-row:last-child { border-bottom: none; }
+.admin-name { flex: 1; font-weight: 500; color: var(--text-primary); }
+.admin-by   { font-size: 11px; color: var(--text-muted); }
+
+/* ── Hint / empty state ── */
+.ep-hint {
+  background: var(--bg-raised); border: 1px dashed var(--border); border-radius: 12px;
+  padding: 54px 40px; text-align: center; color: var(--text-muted); font-family: 'Inter', sans-serif;
+}
+.ep-hint-icon  { font-size: 44px; margin-bottom: 14px; opacity: 0.5; }
+.ep-hint-title { font-size: 17px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; }
+.ep-hint-sub   { font-size: 13px; line-height: 1.7; }
+
+.error-box {
+  background: rgba(212,98,26,0.1); border: 1px solid var(--amber); color: #f09060;
+  border-radius: 8px; padding: 12px 16px; font-size: 14px; margin-bottom: 20px;
+}
+</style>
+{% endblock %}
+
+{% block topbar_title %}<span>Empire</span> Planner{% endblock %}
+
+{% block content %}
+<div class="ep">
+
+<!-- ── Flash messages ── -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<div class="flash-wrap">
+  {% for cat, msg in messages %}
+  <div class="flash-msg flash-{{ cat }}">{{ msg }}</div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endwith %}
+
+<!-- ── Claim search ── -->
+<form method="GET" action="/empire/">
+  <div class="claim-search-wrap">
+    <input type="text" name="claim_id" placeholder="Enter Claim Entity ID…"
+           value="{{ claim_id }}" autocomplete="off"/>
+    <button type="submit" class="ep-btn ep-btn-primary">Load Claim</button>
+  </div>
+</form>
+
+{% if error %}
+<div class="error-box">⚠ {{ error }}</div>
+{% endif %}
+
+<!-- ── Identity bar (always shown when a claim is loaded) ── -->
+{% if claim_id and claim %}
+<div class="identity-bar">
+  {% if user %}
+    <span class="who">Signed in as <strong>{{ user.username }}</strong></span>
+    {% if emperor %}
+      <span class="role-badge role-emperor">⚔ Emperor</span>
+    {% elif authorised %}
+      <span class="role-badge role-admin">★ Admin</span>
+    {% else %}
+      <span class="role-badge role-member">Member (view-only)</span>
+    {% endif %}
+    <span class="spacer"></span>
+    <form method="POST" action="/empire/auth/logout" style="margin:0">
+      <input type="hidden" name="claim_id" value="{{ claim_id }}">
+      <button type="submit" class="ep-btn ep-btn-ghost ep-btn-sm">Sign out</button>
+    </form>
+  {% else %}
+    <span class="who" style="color:var(--text-muted)">Not verified — viewing in read-only mode</span>
+    <span class="spacer"></span>
+    <form method="POST" action="/empire/auth/start" style="margin:0">
+      <input type="hidden" name="claim_id" value="{{ claim_id }}">
+      <button type="submit" class="ep-btn ep-btn-teal ep-btn-sm">🔑 Verify Identity</button>
+    </form>
+  {% endif %}
+</div>
+{% endif %}
+
+<!-- ── Auth verify box (shown after code is generated) ── -->
+{% if pending_code %}
+<div class="auth-box">
+  <div class="auth-box-title">🔑 Verify your in-game identity</div>
+  <div class="auth-box-sub">
+    Post the code below in <strong>in-game chat channel 2</strong>, then click Confirm.
+    The code expires in <strong>10 minutes</strong>.
+  </div>
+  <div class="auth-code-display">bitjita:auth:{{ pending_code }}</div>
+  <div class="auth-code-instruction">
+    Open BitCraft → press Enter to open chat → make sure you're in <strong>Channel 2</strong>
+    → type exactly: <code>bitjita:auth:{{ pending_code }}</code> → press Enter → come back here.
+  </div>
+  <form method="POST" action="/empire/auth/verify" style="display:flex;gap:10px;flex-wrap:wrap">
+    <input type="hidden" name="claim_id" value="{{ claim_id }}">
+    <input type="hidden" name="code" value="{{ pending_code }}">
+    <button type="submit" class="ep-btn ep-btn-primary">✓ I've posted it — verify me</button>
+    <a href="/empire/?claim_id={{ claim_id }}" class="ep-btn ep-btn-ghost">Cancel</a>
+  </form>
+</div>
+{% endif %}
+
+<!-- ════════════════════════════════════════════════════════════════════
+     EMPTY STATE
+     ════════════════════════════════════════════════════════════════════ -->
+{% if not claim and not error %}
+<div class="ep-hint">
+  <div class="ep-hint-icon">⚔</div>
+  <div class="ep-hint-title">Empire Planner</div>
+  <div class="ep-hint-sub">
+    Enter your Claim Entity ID above to load your empire's live data and goals.<br>
+    Find it on <a href="https://bitjita.com/claims" target="_blank" style="color:var(--gold)">bitjita.com/claims</a> — it's the long number in the URL.<br><br>
+    <span style="color:var(--gold-dim)">Example: 576460752317569190</span>
+  </div>
+</div>
+{% endif %}
+
+{% if claim %}
+{% set tier           = claim.tier | int %}
+{% set supplies       = claim.supplies | float %}
+{% set upkeep         = claim.upkeepCost | float %}
+{% set treasury       = claim.treasury | float %}
+{% set tiles          = claim.numTiles | int %}
+{% set member_count   = citizens | length %}
+{% set custom_goals   = goals.get('custom_goals', []) %}
+
+<!-- ── Claim hero ── -->
+<div class="claim-hero">
+  <div class="claim-hero-top">
+    <div style="flex:1;min-width:0">
+      <div class="claim-hero-title">🏰 {{ claim.name }}</div>
+      <div class="claim-hero-meta">
+        <span class="meta-chip gold">Tier {{ tier }}</span>
+        <span class="meta-chip">{{ claim.regionName }}</span>
+        <span class="meta-chip">{{ tiles | format_int }} tiles</span>
+        {% if claim.ownerPlayerUsername %}
+        <span class="meta-chip">👑 {{ claim.ownerPlayerUsername }}</span>
+        {% endif %}
+        {% if supply_status == 'critical' %}
+          <span class="meta-chip red">🔴 {{ supply_days | round(1) }}d supplies</span>
+        {% elif supply_status == 'warning' %}
+          <span class="meta-chip warn">⚠ {{ supply_days | round(1) }}d supplies</span>
+        {% elif supply_days is not none %}
+          <span class="meta-chip teal">✓ {{ supply_days | round(0) | int }}d supplies</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="claim-hero-stats">
+      <div class="hero-stat"><div class="hero-stat-val">{{ member_count }}</div><div class="hero-stat-lbl">Members</div></div>
+      <div class="hero-stat">
+        <div class="hero-stat-val">{% if treasury >= 1000000 %}{{ "%.1fM"|format(treasury/1000000) }}{% elif treasury >= 1000 %}{{ "%.0fK"|format(treasury/1000) }}{% else %}{{ treasury|int }}{% endif %}</div>
+        <div class="hero-stat-lbl">Treasury</div>
+      </div>
+      <div class="hero-stat"><div class="hero-stat-val">{{ upkeep|round(0)|int }}</div><div class="hero-stat-lbl">Upkeep/day</div></div>
+      <div class="hero-stat"><div class="hero-stat-val">T{{ tier }}</div><div class="hero-stat-lbl">Tier</div></div>
+    </div>
+  </div>
+  {% if supply_days is not none and upkeep > 0 %}
+  {% set spct = [[(supplies / (upkeep * 30)) * 100, 0]|max, 100]|min %}
+  <div class="supply-bar-wrap supply-{{ supply_status }}">
+    <div class="supply-bar-row">
+      <span>Supplies: {{ supplies|int|format_int }}</span>
+      <span>{{ supply_days|round(1) }} days at {{ upkeep|round(1) }}/day</span>
+    </div>
+    <div class="supply-bar-bg"><div class="supply-bar-fill" style="width:{{ spct }}%"></div></div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- ── Tabs ── -->
+{% set tab_id = request.args.get('_tab', 'overview') %}
+<div class="ep-tabs" id="ep-tabs">
+  <button class="ep-tab" data-tab="overview"  onclick="epTab('overview',this)">📊 Overview</button>
+  <button class="ep-tab" data-tab="goals"     onclick="epTab('goals',this)">🎯 Goals{% if not authorised %} 🔒{% endif %}</button>
+  <button class="ep-tab" data-tab="members"   onclick="epTab('members',this)">👥 Members ({{ member_count }})</button>
+  {% if emperor %}
+  <button class="ep-tab" data-tab="admin"     onclick="epTab('admin',this)">⚙ Admin Access</button>
+  {% endif %}
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════
+     TAB: OVERVIEW
+     ════════════════════════════════════════════════════════════════════ -->
+<div class="ep-tab-section" id="tab-overview">
+<div class="ep-grid">
+<div>
+
+  <!-- Active goals summary (from DB) -->
+  {% set has_goals = goals.tier_target or goals.treasury_target or goals.supplies_target or goals.tiles_target or goals.member_target or custom_goals %}
+  {% if has_goals or goals.target_skill_id %}
+  <div class="ep-card" style="animation-delay:0.05s">
+    <div class="ep-card-title">🎯 Current Goals
+      {% if goals.updated_by %}
+      <span style="font-size:10px;font-weight:400;color:var(--text-muted);letter-spacing:0;text-transform:none">set by {{ goals.updated_by }}</span>
+      {% endif %}
+    </div>
+    <div class="progress-grid">
+      {% if goals.tier_target %}
+      {% set tgt = goals.tier_target|int %}
+      <div class="progress-card">
+        <div class="progress-card-title">Claim Tier</div>
+        <div class="progress-card-val">T{{ tier }} → T{{ tgt }}</div>
+        <div class="progress-card-sub">{{ [tgt-tier,0]|max }} tier{{ 's' if tgt-tier!=1 else '' }} to go</div>
+        <div class="mini-bar"><div class="mini-bar-fill" style="width:{{ [(tier/tgt*100),100]|min }}%"></div></div>
+      </div>
+      {% endif %}
+      {% if goals.treasury_target %}
+      {% set tgt = goals.treasury_target|float %}
+      {% set pct = [(treasury/tgt*100),100]|min %}
+      <div class="progress-card">
+        <div class="progress-card-title">Treasury</div>
+        <div class="progress-card-val">{% if treasury>=1000 %}{{ "%.0fK"|format(treasury/1000) }}{% else %}{{ treasury|int }}{% endif %} / {% if tgt>=1000 %}{{ "%.0fK"|format(tgt/1000) }}{% else %}{{ tgt|int }}{% endif %}</div>
+        <div class="progress-card-sub">{{ pct|round(0)|int }}% reached</div>
+        <div class="mini-bar"><div class="mini-bar-fill teal" style="width:{{ pct }}%"></div></div>
+      </div>
+      {% endif %}
+      {% if goals.supplies_target %}
+      {% set tgt = goals.supplies_target|float %}
+      {% set pct = [(supplies/tgt*100),100]|min %}
+      <div class="progress-card">
+        <div class="progress-card-title">Supplies</div>
+        <div class="progress-card-val">{{ supplies|int|format_int }} / {{ tgt|int|format_int }}</div>
+        <div class="progress-card-sub">{{ pct|round(0)|int }}% stockpiled</div>
+        <div class="mini-bar"><div class="mini-bar-fill" style="width:{{ pct }}%"></div></div>
+      </div>
+      {% endif %}
+      {% if goals.tiles_target %}
+      {% set tgt = goals.tiles_target|int %}
+      {% set pct = [(tiles/tgt*100),100]|min %}
+      <div class="progress-card">
+        <div class="progress-card-title">Territory Tiles</div>
+        <div class="progress-card-val">{{ tiles|format_int }} / {{ tgt|format_int }}</div>
+        <div class="progress-card-sub">{{ pct|round(0)|int }}% of tile goal</div>
+        <div class="mini-bar"><div class="mini-bar-fill teal" style="width:{{ pct }}%"></div></div>
+      </div>
+      {% endif %}
+      {% if goals.member_target %}
+      {% set tgt = goals.member_target|int %}
+      {% set pct = [(member_count/tgt*100),100]|min %}
+      <div class="progress-card">
+        <div class="progress-card-title">Members</div>
+        <div class="progress-card-val">{{ member_count }} / {{ tgt }}</div>
+        <div class="progress-card-sub">{{ pct|round(0)|int }}% recruited</div>
+        <div class="mini-bar"><div class="mini-bar-fill teal" style="width:{{ pct }}%"></div></div>
+      </div>
+      {% endif %}
+    </div>
+    {% if custom_goals %}
+    <div style="margin-top:16px">
+      <div style="font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px">Custom Goals</div>
+      {% for g in custom_goals %}
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg-surface);border:1px solid var(--border);border-radius:6px;margin-bottom:6px;font-size:13px;color:var(--text-secondary)">
+        <span style="color:var(--gold)">◆</span>{{ g.text }}
+        <span style="margin-left:auto;font-size:11px;color:var(--text-muted)">{{ g.created_by }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="ep-card" style="border-style:dashed;animation-delay:0.05s">
+    <div style="text-align:center;padding:12px;color:var(--text-muted);font-size:13px">
+      No goals set yet.
+      {% if authorised %}Head to the <strong style="color:var(--gold)">Goals</strong> tab to set targets.
+      {% else %}The empire emperor or an admin needs to verify and set goals.{% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Claim health -->
+  <div class="ep-card" style="animation-delay:0.1s">
+    <div class="ep-card-title">📋 Claim Health</div>
+    <table style="width:100%;font-size:13px;border-collapse:collapse">
+      <tbody>
+        {% for label, val in [
+          ("Claim Tier", "Tier " ~ tier),
+          ("Region", claim.regionName),
+          ("Territory Tiles", tiles|format_int),
+          ("Treasury", treasury|int|format_int ~ " coins"),
+          ("Supplies", supplies|int|format_int ~ " (" ~ upkeep|round(1) ~ "/day)"),
+        ] %}
+        <tr style="border-bottom:1px solid rgba(42,58,80,0.4)">
+          <td style="padding:7px 0;color:var(--text-muted);width:50%">{{ label }}</td>
+          <td style="padding:7px 0;font-weight:500;color:var(--text-primary)">{{ val }}</td>
+        </tr>
+        {% endfor %}
+        {% if supply_days is not none %}
+        <tr style="border-bottom:1px solid rgba(42,58,80,0.4)">
+          <td style="padding:7px 0;color:var(--text-muted)">Supplies Runway</td>
+          <td style="padding:7px 0;font-weight:600;color:{% if supply_status=='critical' %}#f06060{% elif supply_status=='warning' %}#e0a030{% else %}var(--teal-light){% endif %}">
+            {{ supply_days|round(1) }} days
+          </td>
+        </tr>
+        {% endif %}
+        <tr>
+          <td style="padding:7px 0;color:var(--text-muted)">Members</td>
+          <td style="padding:7px 0;font-weight:500;color:var(--text-primary)">{{ member_count }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  {% if supply_status in ('critical','warning') %}
+  <div class="ep-card" style="border-color:{% if supply_status=='critical' %}#7a2222{% else %}#7a5500{% endif %};animation-delay:0.15s">
+    <div class="ep-card-title" style="color:{% if supply_status=='critical' %}#f06060{% else %}#e0a030{% endif %}">
+      {% if supply_status=='critical' %}🔴 Critical: Supplies Critically Low{% else %}⚠ Warning: Supplies Running Low{% endif %}
+    </div>
+    <div style="font-size:13px;color:var(--text-secondary);line-height:1.6">
+      At {{ upkeep|round(1) }}/day, your {{ supplies|int|format_int }} supplies will last <strong style="color:{% if supply_status=='critical' %}#f06060{% else %}#e0a030{% endif %}">{{ supply_days|round(1) }} more days</strong>.
+      {% if supply_status=='critical' %}Replenish immediately!{% else %}Consider restocking soon.{% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+</div><!-- /left -->
+
+<!-- Right col -->
+<div>
+  {% if citizens %}
+  <div class="ep-card" style="animation-delay:0.08s">
+    <div class="ep-card-title">👥 Member Snapshot</div>
+    {% set avg_level = (citizens|sum(attribute='totalLevel') / member_count)|round(0)|int %}
+    {% set max_level = citizens|map(attribute='highestLevel')|max %}
+    <div style="display:flex;gap:10px;margin-bottom:14px">
+      <div class="progress-card" style="flex:1"><div class="progress-card-title">Avg Total Level</div><div class="progress-card-val">{{ avg_level }}</div></div>
+      <div class="progress-card" style="flex:1"><div class="progress-card-title">Top Skill</div><div class="progress-card-val">{{ max_level }}</div></div>
+    </div>
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;letter-spacing:0.05em;text-transform:uppercase">Top Members</div>
+    {% for c in citizens[:8] %}
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(42,58,80,0.4);font-size:13px">
+      <span style="color:var(--text-primary);font-weight:{% if loop.index<=3 %}600{% else %}400{% endif %}">
+        {% if loop.index==1 %}🥇 {% elif loop.index==2 %}🥈 {% elif loop.index==3 %}🥉 {% endif %}{{ c.userName }}
+      </span>
+      <span style="color:var(--gold);font-weight:600">{{ c.totalLevel }}</span>
+    </div>
+    {% endfor %}
+    {% if member_count > 8 %}
+    <div style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:8px">+{{ member_count-8 }} more — see Members tab</div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- Auth admins list -->
+  {% if db_admins %}
+  <div class="ep-card" style="animation-delay:0.12s">
+    <div class="ep-card-title">⚔ Planner Admins</div>
+    {% for a in db_admins %}
+    <div class="admin-row">
+      <span class="admin-name">{{ a.username }}</span>
+      <span class="admin-by">by {{ a.granted_by }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div><!-- /right -->
+</div><!-- /ep-grid -->
+</div><!-- /tab-overview -->
+
+
+<!-- ════════════════════════════════════════════════════════════════════
+     TAB: GOALS (edit — admin only)
+     ════════════════════════════════════════════════════════════════════ -->
+<div class="ep-tab-section" id="tab-goals">
+{% if not authorised %}
+<div class="ep-card" style="text-align:center;padding:32px">
+  <div style="font-size:32px;margin-bottom:12px;opacity:0.5">🔒</div>
+  <div style="font-size:15px;font-weight:600;color:var(--text-secondary);margin-bottom:8px">Admin access required</div>
+  <div style="font-size:13px;color:var(--text-muted);margin-bottom:20px">
+    Only the emperor and granted admins can set goals.<br>
+    Click <strong style="color:var(--gold)">Verify Identity</strong> in the bar above to authenticate.
+  </div>
+</div>
+{% else %}
+
+<form method="POST" action="/empire/goals/save">
+<input type="hidden" name="claim_id" value="{{ claim_id }}">
+<div style="max-width:700px">
+
+  <div class="ep-card">
+    <div class="ep-card-title">🏰 Claim Growth</div>
+    <div class="goal-row">
+      <span class="goal-label">Target Claim Tier</span>
+      <input class="goal-input" type="number" name="tier_target" min="1" max="20" placeholder="e.g. 5" value="{{ goals.tier_target or '' }}">
+      <span class="goal-current">Now: T{{ tier }}</span>
+    </div>
+    <div class="goal-row">
+      <span class="goal-label">Tile Goal</span>
+      <input class="goal-input" type="number" name="tiles_target" min="1" placeholder="e.g. 10000" value="{{ goals.tiles_target or '' }}">
+      <span class="goal-current">Now: {{ tiles|format_int }}</span>
+    </div>
+    <div class="goal-row">
+      <span class="goal-label">Member Goal</span>
+      <input class="goal-input" type="number" name="member_target" min="1" placeholder="e.g. 50" value="{{ goals.member_target or '' }}">
+      <span class="goal-current">Now: {{ member_count }}</span>
+    </div>
+  </div>
+
+  <div class="ep-card">
+    <div class="ep-card-title">💰 Economy</div>
+    <div class="goal-row">
+      <span class="goal-label">Treasury Target</span>
+      <input class="goal-input" type="number" name="treasury_target" min="0" placeholder="e.g. 500000" value="{{ goals.treasury_target or '' }}">
+      <span class="goal-current">Now: {{ treasury|int|format_int }}</span>
+    </div>
+    <div class="goal-hint">Minimum coin reserve to keep the empire funded for upgrades and research.</div>
+    <div class="goal-row" style="margin-top:12px">
+      <span class="goal-label">Supplies Stockpile</span>
+      <input class="goal-input" type="number" name="supplies_target" min="0" placeholder="e.g. 100000" value="{{ goals.supplies_target or '' }}">
+      <span class="goal-current">Now: {{ supplies|int|format_int }}</span>
+    </div>
+    <div class="goal-hint">Upkeep is {{ upkeep|round(1) }}/day → {{ (upkeep*30)|round(0)|int|format_int }}/month. Keep above this as a buffer.</div>
+  </div>
+
+  <div class="ep-card">
+    <div class="ep-card-title">⚔ Member Skill Goal</div>
+    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px;line-height:1.5">
+      Set a target skill and minimum level. Members will be highlighted green/red in the Members tab.
+    </p>
+    <div class="goal-row">
+      <span class="goal-label">Skill to track</span>
+      <select class="goal-select" name="target_skill_id">
+        <option value="">— Select skill —</option>
+        {% for sid, sname in skill_names.items() %}
+        <option value="{{ sid }}" {% if goals.target_skill_id == sid|string %}selected{% endif %}>{{ sname }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="goal-row">
+      <span class="goal-label">Minimum Level</span>
+      <input class="goal-input" type="number" name="min_skill_level" min="1" max="99" placeholder="e.g. 20" value="{{ goals.min_skill_level or '' }}">
+    </div>
+    <div class="goal-hint">Members below this level will appear red in the Members tab.</div>
+    <div class="goal-row" style="margin-top:12px">
+      <span class="goal-label">Focus Skills</span>
+      <input class="goal-input" name="focus_skill_ids" type="text" placeholder="e.g. 5,6,9" value="{{ goals.focus_skill_ids or '' }}" style="max-width:280px">
+    </div>
+    <div class="goal-hint">Comma-separated skill IDs to show as columns in the Members table.</div>
+  </div>
+
+  <div style="display:flex;gap:10px;margin-bottom:20px">
+    <button type="submit" class="ep-btn ep-btn-primary">💾 Save Goals</button>
+    <a href="/empire/?claim_id={{ claim_id }}" class="ep-btn ep-btn-ghost">Cancel</a>
+  </div>
+</div>
+</form>
+
+<!-- Custom goals (AJAX) -->
+<div class="ep-card" style="max-width:700px">
+  <div class="ep-card-title">📝 Custom Goals</div>
+  <p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px">
+    Free-form goals shown on the Overview — visible to all members when they load the claim.
+  </p>
+  <div id="custom-goals-list">
+    {% for g in custom_goals %}
+    <div class="custom-goal-item" id="cg-{{ g.id }}">
+      <span style="color:var(--gold)">◆</span>
+      <span>{{ g.text }}</span>
+      <span class="by">{{ g.created_by }}</span>
+      <button class="custom-goal-del" onclick="deleteCustomGoal({{ g.id }})">×</button>
+    </div>
+    {% endfor %}
+  </div>
+  <div class="custom-goal-add">
+    <input class="goal-input" type="text" id="cg-input" placeholder="Add a custom goal…" style="max-width:100%;flex:1"
+           onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomGoal()}">
+    <button type="button" class="ep-btn ep-btn-ghost ep-btn-sm" onclick="addCustomGoal()">+ Add</button>
+  </div>
+</div>
+
+{% endif %}
+</div><!-- /tab-goals -->
+
+
+<!-- ════════════════════════════════════════════════════════════════════
+     TAB: MEMBERS
+     ════════════════════════════════════════════════════════════════════ -->
+<div class="ep-tab-section" id="tab-members">
+  {% set focus_ids = [] %}
+  {% if goals.focus_skill_ids %}
+    {% for fid in goals.focus_skill_ids.split(',') %}
+      {% if fid.strip()|int > 0 %}{% set _ = focus_ids.append(fid.strip()|int) %}{% endif %}
+    {% endfor %}
+  {% endif %}
+
+  <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
+    <input type="text" id="member-search" class="goal-input" style="max-width:240px;flex:1"
+           placeholder="Filter by name…" oninput="filterMembers()">
+    <select class="goal-select" id="member-sort" style="max-width:180px" onchange="sortMembers()">
+      <option value="total">Total Level ↓</option>
+      <option value="highest">Highest Skill ↓</option>
+      <option value="name">Name A–Z</option>
+    </select>
+    <span style="font-size:12px;color:var(--text-muted)">
+      {{ member_count }} members · <span id="members-shown">{{ member_count }}</span> shown
+    </span>
+  </div>
+
+  {% set goal_skill_id  = goals.target_skill_id|int if goals.target_skill_id else 0 %}
+  {% set goal_skill_lvl = goals.min_skill_level|int  if goals.min_skill_level  else 0 %}
+
+  <div class="ep-card" style="padding:0;overflow:hidden">
+    <div style="overflow-x:auto">
+    <table class="member-table" id="member-table">
+      <thead>
+        <tr>
+          <th style="width:36px">#</th>
+          <th>Member</th>
+          <th>Total Lv</th>
+          <th>Top Lv</th>
+          {% if goal_skill_id and goal_skill_lvl %}
+          <th>{{ skill_names.get(goal_skill_id,'Skill') }} (goal: {{ goal_skill_lvl }}+)</th>
+          {% endif %}
+          {% for fid in focus_ids %}
+          <th>{{ skill_names.get(fid,'Sk'~fid) }}</th>
+          {% endfor %}
+          <th>Role</th>
+        </tr>
+      </thead>
+      <tbody id="member-tbody">
+        {% for c in citizens %}
+        {% set mslvl = c.skills.get(goal_skill_id, 0) if goal_skill_id else 0 %}
+        <tr data-name="{{ c.userName|lower }}" data-total="{{ c.totalLevel }}" data-highest="{{ c.highestLevel }}">
+          <td style="color:var(--text-muted);font-size:11px">{{ loop.index }}</td>
+          <td><span class="member-name">{{ c.userName }}</span></td>
+          <td><strong>{{ c.totalLevel }}</strong></td>
+          <td style="color:var(--text-muted)">{{ c.highestLevel }}</td>
+          {% if goal_skill_id and goal_skill_lvl %}
+          <td>
+            {% if mslvl >= goal_skill_lvl %}
+              <span class="skill-badge skill-met">{{ mslvl }} ✓</span>
+            {% elif mslvl >= goal_skill_lvl * 0.75 %}
+              <span class="skill-badge skill-close">{{ mslvl }}</span>
+            {% elif mslvl > 0 %}
+              <span class="skill-badge skill-low">{{ mslvl }}</span>
+            {% else %}
+              <span class="skill-badge skill-none">—</span>
+            {% endif %}
+          </td>
+          {% endif %}
+          {% for fid in focus_ids %}
+          {% set flvl = c.skills.get(fid, 0) %}
+          <td><span class="skill-badge {% if flvl > 0 %}skill-met{% else %}skill-none{% endif %}">{{ flvl if flvl > 0 else '—' }}</span></td>
+          {% endfor %}
+          <td>
+            {% if c.userName in db_admins|map(attribute='username')|list %}
+              <span class="meta-chip gold" style="font-size:10px">Admin</span>
+            {% elif c.userName == owner_username %}
+              <span class="meta-chip gold" style="font-size:10px">⚔ Emperor</span>
+            {% else %}
+              <span style="font-size:11px;color:var(--text-muted)">Member</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  {% if goal_skill_id and goal_skill_lvl and citizens %}
+  {% set skill_nm = skill_names.get(goal_skill_id,'Skill') %}
+  {% set met = citizens|selectattr('skills.'~goal_skill_id, 'ge', goal_skill_lvl)|list|length %}
+  {% set not_met = member_count - met %}
+  <div class="ep-card" style="margin-top:16px">
+    <div class="ep-card-title">{{ skill_nm }} Lv {{ goal_skill_lvl }}+ — Goal Progress</div>
+    <div class="progress-grid">
+      <div class="progress-card">
+        <div class="progress-card-title">Meeting Goal</div>
+        <div class="progress-card-val" style="color:var(--teal-light)">{{ met }}</div>
+        <div class="progress-card-sub">of {{ member_count }} members</div>
+        <div class="mini-bar"><div class="mini-bar-fill teal" style="width:{{ (met/member_count*100) if member_count else 0 }}%"></div></div>
+      </div>
+      <div class="progress-card">
+        <div class="progress-card-title">Still Needed</div>
+        <div class="progress-card-val" style="color:{% if not_met>0 %}#f06060{% else %}var(--teal-light){% endif %}">{{ not_met }}</div>
+        <div class="progress-card-sub">{% if not_met==0 %}All qualified! 🎉{% else %}need to level up{% endif %}</div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div><!-- /tab-members -->
+
+
+<!-- ════════════════════════════════════════════════════════════════════
+     TAB: ADMIN ACCESS (emperor only)
+     ════════════════════════════════════════════════════════════════════ -->
+{% if emperor %}
+<div class="ep-tab-section" id="tab-admin">
+  <div style="max-width:600px">
+
+    <div class="ep-card">
+      <div class="ep-card-title">⚙ Planner Admins</div>
+      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;line-height:1.5">
+        Admins can set and edit goals for this claim. Only you (the emperor) can grant or revoke this access.
+        The person must have verified their identity on this page at least once before you can grant them access.
+      </p>
+
+      {% if db_admins %}
+      <div style="margin-bottom:20px">
+        {% for a in db_admins %}
+        <div class="admin-row">
+          <span class="admin-name">{{ a.username }}</span>
+          <span class="admin-by">granted by {{ a.granted_by }}</span>
+          <form method="POST" action="/empire/admin/revoke" style="margin:0">
+            <input type="hidden" name="claim_id" value="{{ claim_id }}">
+            <input type="hidden" name="username" value="{{ a.username }}">
+            <button type="submit" class="ep-btn ep-btn-danger ep-btn-sm">Revoke</button>
+          </form>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:20px;font-style:italic">
+        No admins granted yet. Add members below.
+      </div>
+      {% endif %}
+
+      <form method="POST" action="/empire/admin/grant">
+        <input type="hidden" name="claim_id" value="{{ claim_id }}">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+          <input class="goal-input" type="text" name="username" placeholder="Player username…" style="max-width:240px;flex:1">
+          <button type="submit" class="ep-btn ep-btn-teal">+ Grant Admin Access</button>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:8px">
+          The player must be a member of this claim and have already verified their identity on this page.
+        </div>
+      </form>
+    </div>
+
+    <div class="ep-card">
+      <div class="ep-card-title">ℹ How Verification Works</div>
+      <div style="font-size:13px;color:var(--text-secondary);line-height:1.7">
+        <strong style="color:var(--text-primary)">1.</strong> The member opens this page and clicks <em>Verify Identity</em> in the bar above.<br>
+        <strong style="color:var(--text-primary)">2.</strong> They receive a unique code (e.g. <code style="color:var(--gold);background:var(--bg-deep);padding:1px 6px;border-radius:3px">A3F92B1C</code>).<br>
+        <strong style="color:var(--text-primary)">3.</strong> They post <code style="color:var(--gold);background:var(--bg-deep);padding:1px 6px;border-radius:3px">bitjita:auth:A3F92B1C</code> in in-game chat channel 2.<br>
+        <strong style="color:var(--text-primary)">4.</strong> Bitjita confirms who they are — no passwords involved.<br>
+        <strong style="color:var(--text-primary)">5.</strong> You then enter their username above to grant them edit access.
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endif %}
+
+{% endif %}{# end if claim #}
+
+</div><!-- /ep -->
+
+<script>
+// ── Tab routing (hash-based) ───────────────────────────────────────────────
+function epTab(id, btn) {
+  document.querySelectorAll('.ep-tab-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.ep-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  btn.classList.add('active');
+  location.hash = 'tab-' + id;
+}
+
+// Restore tab from hash on load
+(function() {
+  const hash = location.hash.replace('#', '');
+  if (hash && document.getElementById(hash)) {
+    const btn = document.querySelector(`[data-tab="${hash.replace('tab-','')}"]`);
+    if (btn) epTab(hash.replace('tab-',''), btn);
+    else document.querySelector('.ep-tab')?.click();
+  } else {
+    document.querySelector('.ep-tab')?.click();
+  }
+})();
+
+// ── Custom goals (AJAX) ───────────────────────────────────────────────────
+const CLAIM_ID = '{{ claim_id }}';
+
+async function addCustomGoal() {
+  const inp = document.getElementById('cg-input');
+  const text = inp.value.trim();
+  if (!text) return;
+
+  const fd = new FormData();
+  fd.append('claim_id', CLAIM_ID);
+  fd.append('text', text);
+
+  const r = await fetch('/empire/goals/custom/add', { method: 'POST', body: fd });
+  if (r.status === 403) { alert('Session expired — please re-verify your identity.'); return; }
+  const data = await r.json();
+  if (data.error) { alert(data.error); return; }
+
+  const list = document.getElementById('custom-goals-list');
+  const div  = document.createElement('div');
+  div.className = 'custom-goal-item';
+  div.id = `cg-${data.id}`;
+  div.innerHTML = `<span style="color:var(--gold)">◆</span><span>${data.text}</span><button class="custom-goal-del" onclick="deleteCustomGoal(${data.id})">×</button>`;
+  list.appendChild(div);
+  inp.value = '';
+}
+
+async function deleteCustomGoal(id) {
+  const fd = new FormData();
+  fd.append('claim_id', CLAIM_ID);
+  fd.append('goal_id', id);
+
+  const r = await fetch('/empire/goals/custom/delete', { method: 'POST', body: fd });
+  if (r.ok) {
+    const el = document.getElementById(`cg-${id}`);
+    if (el) el.remove();
+  }
+}
+
+// ── Member table filter / sort ────────────────────────────────────────────
+function filterMembers() {
+  const q = (document.getElementById('member-search')?.value || '').toLowerCase();
+  let shown = 0;
+  document.querySelectorAll('#member-tbody tr').forEach(r => {
+    const vis = (r.dataset.name || '').includes(q);
+    r.style.display = vis ? '' : 'none';
+    if (vis) shown++;
+  });
+  const el = document.getElementById('members-shown');
+  if (el) el.textContent = shown;
+}
+
+function sortMembers() {
+  const key   = document.getElementById('member-sort')?.value || 'total';
+  const tbody = document.getElementById('member-tbody');
+  if (!tbody) return;
+  const rows  = Array.from(tbody.querySelectorAll('tr'));
+  rows.sort((a, b) => {
+    if (key === 'name') return (a.dataset.name || '').localeCompare(b.dataset.name || '');
+    const av = Number(a.dataset[key] || 0);
+    const bv = Number(b.dataset[key] || 0);
+    return bv - av;
+  });
+  rows.forEach((r, i) => {
+    r.querySelector('td').textContent = i + 1;
+    tbody.appendChild(r);
+  });
+}
+</script>
+{% endblock %}

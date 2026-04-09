@@ -1,0 +1,600 @@
+{% extends "base.html" %}
+{% block title %}Player Lookup — BitCraft Hub{% endblock %}
+
+{% block head %}
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ── Search bar ── */
+  .lookup-form {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 36px;
+    max-width: 520px;
+  }
+  .lookup-input-wrap {
+    flex: 1;
+    position: relative;
+  }
+  .lookup-input-wrap input {
+    width: 100%;
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px 12px 42px;
+    color: var(--text-primary);
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .lookup-input-wrap input:focus {
+    border-color: var(--gold-dim);
+    box-shadow: 0 0 0 3px rgba(200,146,42,0.08);
+  }
+  .lookup-input-wrap input::placeholder { color: var(--text-muted); }
+  .lookup-search-icon {
+    position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+    color: var(--text-muted); font-size: 16px; pointer-events: none;
+  }
+  .lookup-btn {
+    background: var(--gold-dim);
+    border: none;
+    color: #fff;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 12px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+    white-space: nowrap;
+  }
+  .lookup-btn:hover { background: var(--gold); }
+
+  /* ── Player header (WOM-style) ── */
+  .player-hero {
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px 32px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    position: relative;
+    overflow: hidden;
+    animation: fadeUp 0.35s ease both;
+  }
+  .player-hero::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--gold-dim), var(--gold-light), var(--gold-dim));
+  }
+  .player-hero-avatar {
+    width: 80px; height: 80px;
+    border-radius: 16px;
+    background: var(--bg-hover);
+    border: 2px solid var(--border-glow);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 42px;
+    flex-shrink: 0;
+  }
+  .player-hero-info { flex: 1; min-width: 0; }
+  .player-hero-name {
+    font-family: 'Inter', sans-serif;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+    letter-spacing: -0.3px;
+  }
+  .player-hero-meta {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-family: 'Inter', sans-serif;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .player-hero-meta .dot { width: 3px; height: 3px; border-radius: 50%; background: var(--text-muted); }
+
+  /* ── Stat pills row (WOM top stats) ── */
+  .stat-pills {
+    display: flex;
+    gap: 12px;
+    margin-left: auto;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .stat-pill {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 18px;
+    text-align: center;
+    min-width: 90px;
+  }
+  .stat-pill-val {
+    font-family: 'Inter', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--gold-light);
+    letter-spacing: -0.5px;
+    line-height: 1.2;
+  }
+  .stat-pill-lbl {
+    font-size: 10px;
+    font-family: 'Inter', sans-serif;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-top: 3px;
+    font-weight: 500;
+  }
+
+  /* ── Section tabs (like WOM Overview / Gained / Records) ── */
+  .profile-tabs {
+    display: flex;
+    gap: 2px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+  }
+  .profile-tab {
+    padding: 10px 18px;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.18s;
+    background: none;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+    margin-bottom: -1px;
+  }
+  .profile-tab:hover { color: var(--text-primary); }
+  .profile-tab.active { color: var(--gold-light); border-bottom-color: var(--gold); }
+
+  /* ── Tab sections ── */
+  .tab-section { display: none; }
+  .tab-section.active { display: block; }
+
+  /* ── Skill category header ── */
+  .skill-category-hdr {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin: 0 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .skill-category-hdr::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* ── Skill grid (WOM-style cards) ── */
+  .skill-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(156px, 1fr));
+    gap: 8px;
+    margin-bottom: 28px;
+  }
+
+  /* ── Individual skill card ── */
+  .skill-card {
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: border-color 0.18s, transform 0.18s;
+    animation: fadeUp 0.3s ease both;
+    cursor: default;
+    position: relative;
+    overflow: hidden;
+  }
+  .skill-card:hover {
+    border-color: var(--border-glow);
+    transform: translateY(-2px);
+  }
+
+  /* XP progress fills the bottom of the card */
+  .skill-card-progress {
+    position: absolute;
+    bottom: 0; left: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--gold-dim), var(--gold));
+    transition: width 0.8s ease;
+    border-radius: 0 0 0 10px;
+  }
+
+  .skill-card-icon {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    background: var(--bg-hover);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+  .skill-card-body { flex: 1; min-width: 0; }
+  .skill-card-name {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .skill-card-level {
+    font-family: 'Inter', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.5px;
+    line-height: 1;
+  }
+  .skill-card-xp {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: 'Inter', sans-serif;
+    margin-top: 2px;
+  }
+
+  /* ── Zero-level skill: dimmed ── */
+  .skill-card.zero .skill-card-level { color: var(--text-muted); font-size: 18px; }
+  .skill-card.zero .skill-card-icon { opacity: 0.4; }
+
+  /* ── Claims & Empire section ── */
+  .claims-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .claim-card {
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    animation: fadeUp 0.3s ease both;
+    transition: border-color 0.18s;
+  }
+  .claim-card:hover { border-color: var(--teal); }
+  .claim-card-name {
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+  }
+  .claim-stat-row {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+  .claim-stat-row .val { color: var(--text-secondary); font-weight: 500; }
+
+  /* ── Exploration bar ── */
+  .explore-wrap {
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+    animation: fadeUp 0.3s ease both;
+  }
+  .explore-hdr {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+  }
+  .explore-title { font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 600; color: var(--text-primary); }
+  .explore-pct   { font-family: 'Inter', sans-serif; font-size: 20px; font-weight: 700; color: var(--teal-light); }
+  .explore-bar-bg { background: var(--bg-deep); border-radius: 6px; height: 8px; overflow: hidden; margin-bottom: 8px; }
+  .explore-bar-fill { height: 100%; border-radius: 6px; background: linear-gradient(90deg, var(--teal), var(--teal-light)); transition: width 0.8s ease; }
+  .explore-sub { font-family: 'Inter', sans-serif; font-size: 12px; color: var(--text-muted); }
+
+  /* ── Empire card ── */
+  .empire-card {
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    animation: fadeUp 0.3s ease both;
+  }
+  .empire-name { font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; color: var(--text-primary); }
+  .empire-rank-title { font-family: 'Inter', sans-serif; font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+  .empire-rank-badge {
+    background: rgba(42,138,122,0.12);
+    border: 1px solid var(--teal);
+    color: var(--teal-light);
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 20px;
+  }
+
+  /* ── Misc ── */
+  .error-box {
+    background: rgba(212,98,26,0.1); border: 1px solid var(--amber); color: #f09060;
+    border-radius: 8px; padding: 14px 20px; font-style: italic; margin-bottom: 24px;
+    font-family: 'Inter', sans-serif; font-size: 14px;
+  }
+  .mock-banner {
+    background: rgba(212,98,26,0.08); border: 1px solid var(--amber); color: #f09060;
+    border-radius: 8px; padding: 10px 16px; font-size: 13px; margin-bottom: 20px;
+    font-family: 'Inter', sans-serif;
+  }
+  .hint-box {
+    background: var(--bg-raised); border: 1px dashed var(--border); border-radius: 12px;
+    padding: 56px 40px; text-align: center; color: var(--text-muted);
+    font-family: 'Inter', sans-serif;
+  }
+  .hint-box .hint-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.5; }
+  .hint-box .hint-title { font-size: 16px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; }
+  .hint-box .hint-sub { font-size: 13px; }
+
+  /* Pick list */
+  .pick-list { display: flex; flex-direction: column; gap: 8px; max-width: 500px; }
+  .pick-row {
+    background: var(--bg-raised); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px 18px; display: flex; align-items: center; justify-content: space-between;
+    text-decoration: none; color: inherit; transition: all 0.18s; animation: fadeUp 0.3s ease both;
+    font-family: 'Inter', sans-serif;
+  }
+  .pick-row:hover { border-color: var(--gold-dim); background: var(--bg-hover); }
+  .pick-row-name { font-size: 15px; font-weight: 600; color: var(--text-primary); }
+  .pick-row-id   { font-size: 12px; color: var(--text-muted); font-family: monospace; margin-top: 2px; }
+</style>
+{% endblock %}
+
+{% block topbar_title %}<span>Player</span> Lookup{% endblock %}
+
+{% block content %}
+
+<!-- Search -->
+<form class="lookup-form" method="GET">
+  <div class="lookup-input-wrap">
+    <span class="lookup-search-icon">🔍</span>
+    <input type="text" name="name" placeholder="Search player by username…"
+           value="{{ search_name }}" autocomplete="off" autofocus/>
+  </div>
+  <button class="lookup-btn" type="submit">Look Up</button>
+</form>
+
+{% if using_mock %}
+<div class="mock-banner">⚠ Showing mock data — API unreachable.</div>
+{% endif %}
+
+{% if error %}
+  <div class="error-box">{{ error }}</div>
+
+{% elif search_results %}
+  <!-- Multiple matches — pick list -->
+  <div class="skill-category-hdr">{{ search_results|length }} players found</div>
+  <div class="pick-list">
+    {% for p in search_results %}
+    <a class="pick-row" href="/player/id/{{ p.entityId }}" style="animation-delay:{{ loop.index0 * 0.06 }}s">
+      <div>
+        <div class="pick-row-name">{{ p.username }}</div>
+        <div class="pick-row-id">{{ p.entityId }}</div>
+      </div>
+      <span style="color:var(--text-muted)">→</span>
+    </a>
+    {% endfor %}
+  </div>
+
+{% elif profile %}
+  {% set player = profile.player %}
+  {% set exploration = profile.exploration %}
+
+  {# ── Compute overall totals from skills list ── #}
+  {% set total_level = skills | sum(attribute='level') %}
+  {% set total_xp    = skills | sum(attribute='total_xp') %}
+  {% set hours_played = (player.timePlayed // 3600) if player.timePlayed else 0 %}
+
+  <!-- ── HERO HEADER ── -->
+  <div class="player-hero">
+    <div class="player-hero-avatar">🧙</div>
+    <div class="player-hero-info">
+      <div class="player-hero-name">{{ player.username }}</div>
+      <div class="player-hero-meta">
+        {% if player.get('location') %}
+          <span>📍 {{ player.location.name }}</span>
+          <span class="dot"></span>
+        {% endif %}
+        {% if player.get('empireMemberships') %}
+          <span>⚔ {{ player.empireMemberships[0].empireName }}</span>
+          <span class="dot"></span>
+        {% endif %}
+        <span style="font-family:monospace;font-size:11px">{{ player.entityId }}</span>
+      </div>
+    </div>
+
+    <!-- Stat pills (top-right like WOM) -->
+    <div class="stat-pills">
+      {% if total_level %}
+      <div class="stat-pill">
+        <div class="stat-pill-val">{{ total_level }}</div>
+        <div class="stat-pill-lbl">Total Level</div>
+      </div>
+      {% endif %}
+      {% if total_xp %}
+      <div class="stat-pill">
+        <div class="stat-pill-val">
+          {% if total_xp >= 1000000 %}{{ "%.1fM"|format(total_xp/1000000) }}
+          {% elif total_xp >= 1000 %}{{ "%.0fK"|format(total_xp/1000) }}
+          {% else %}{{ total_xp }}{% endif %}
+        </div>
+        <div class="stat-pill-lbl">Total XP</div>
+      </div>
+      {% endif %}
+      {% if hours_played %}
+      <div class="stat-pill">
+        <div class="stat-pill-val">{{ hours_played }}</div>
+        <div class="stat-pill-lbl">Hours</div>
+      </div>
+      {% endif %}
+      {% if exploration %}
+      <div class="stat-pill">
+        <div class="stat-pill-val">{{ "%.1f"|format(exploration.totalPercentageExplored) }}%</div>
+        <div class="stat-pill-lbl">Explored</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ── TABS ── -->
+  <div class="profile-tabs">
+    <button class="profile-tab active" onclick="switchTab('skills', this)">Skills</button>
+    <button class="profile-tab" onclick="switchTab('details', this)">Details</button>
+  </div>
+
+  <!-- ── TAB: SKILLS ── -->
+  <div class="tab-section active" id="tab-skills">
+    {% if skills %}
+      {% set categories = skills | map(attribute='category') | unique | list %}
+      {% for cat in categories %}
+        {% set cat_skills = skills | selectattr('category', 'eq', cat) | list %}
+        <div class="skill-category-hdr">{{ cat }} <span style="color:var(--text-muted);font-size:10px;font-weight:400">{{ cat_skills|length }} skills</span></div>
+        <div class="skill-grid">
+          {% for skill in cat_skills %}
+          {% set is_zero = skill.level == 0 and skill.total_xp == 0 %}
+          <div class="skill-card {{ 'zero' if is_zero else '' }}"
+               style="animation-delay:{{ loop.index0 * 0.03 }}s"
+               title="{{ skill.name }} — {{ '{:,}'.format(skill.total_xp) }} XP total">
+            <div class="skill-card-progress" style="width:{{ skill.pct }}%"></div>
+            <div class="skill-card-icon">{{ skill_icons.get(skill.name, '⚙') }}</div>
+            <div class="skill-card-body">
+              <div class="skill-card-name">{{ skill.name }}</div>
+              <div class="skill-card-level">{{ skill.level }}</div>
+              <div class="skill-card-xp">
+                {% if skill.total_xp >= 1000000 %}{{ "%.2fM"|format(skill.total_xp/1000000) }} xp
+                {% elif skill.total_xp >= 1000 %}{{ "%.1fK"|format(skill.total_xp/1000) }} xp
+                {% else %}{{ skill.total_xp }} xp{% endif %}
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      {% endfor %}
+    {% else %}
+      <div style="color:var(--text-muted);font-style:italic;font-family:'Inter',sans-serif">No skill data found.</div>
+    {% endif %}
+  </div>
+
+  <!-- ── TAB: DETAILS ── -->
+  <div class="tab-section" id="tab-details">
+
+    {% if exploration %}
+    <div class="skill-category-hdr">Exploration</div>
+    <div class="explore-wrap">
+      <div class="explore-hdr">
+        <span class="explore-title">World Explored</span>
+        <span class="explore-pct">{{ "%.2f"|format(exploration.totalPercentageExplored) }}%</span>
+      </div>
+      <div class="explore-bar-bg">
+        <div class="explore-bar-fill" style="width:{{ [exploration.totalPercentageExplored * 100, 100]|min }}%"></div>
+      </div>
+      <div class="explore-sub">
+        {{ "{:,}".format(exploration.totalExploredChunks) }} / {{ "{:,}".format(exploration.totalChunks) }} chunks
+        &nbsp;·&nbsp; {{ exploration.regionCount }} regions discovered
+      </div>
+    </div>
+    {% endif %}
+
+    {% if player.get('empireMemberships') %}
+    <div class="skill-category-hdr">Empire</div>
+    {% for em in player.empireMemberships %}
+    <div class="empire-card" style="animation-delay:{{ loop.index0 * 0.06 }}s">
+      <div>
+        <div class="empire-name">⚔ {{ em.empireName }}</div>
+        <div class="empire-rank-title">{{ em.rankTitle }}</div>
+      </div>
+      <div class="empire-rank-badge">Rank {{ em.rank }}</div>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    {% if player.get('claims') %}
+    <div class="skill-category-hdr" style="margin-top:8px">Claims</div>
+    <div class="claims-grid">
+      {% for c in player.claims %}
+      <div class="claim-card" style="animation-delay:{{ loop.index0 * 0.06 }}s">
+        <div class="claim-card-name">🏰 {{ c.name }}</div>
+        {% if c.get('regionName') %}
+        <div class="claim-stat-row"><span>Region</span><span class="val">{{ c.regionName }}</span></div>
+        {% endif %}
+        {% if c.get('tier') %}
+        <div class="claim-stat-row"><span>Tier</span><span class="val">{{ c.tier }}</span></div>
+        {% endif %}
+        {% if c.get('numTiles') %}
+        <div class="claim-stat-row"><span>Tiles</span><span class="val">{{ "{:,}".format(c.numTiles|int) }}</span></div>
+        {% endif %}
+        {% if c.get('treasury') %}
+        <div class="claim-stat-row"><span>Treasury</span><span class="val">{{ "{:,}".format(c.treasury|int) }} coins</span></div>
+        {% endif %}
+        {% if c.get('supplies') %}
+        <div class="claim-stat-row"><span>Supplies</span><span class="val">{{ "{:,}".format(c.supplies|int) }}</span></div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Raw player info -->
+    <div class="skill-category-hdr" style="margin-top:8px">Session Info</div>
+    <div class="claim-card" style="border-radius:10px;padding:18px 20px;background:var(--bg-raised);border:1px solid var(--border)">
+      {% if player.get('lastLoginTimestamp') %}
+      <div class="claim-stat-row"><span>Last Login</span><span class="val">{{ player.lastLoginTimestamp[:10] }}</span></div>
+      {% endif %}
+      {% if player.get('timePlayed') %}
+      <div class="claim-stat-row"><span>Time Played</span><span class="val">{{ (player.timePlayed // 3600) }}h {{ ((player.timePlayed % 3600) // 60) }}m</span></div>
+      {% endif %}
+      {% if player.get('locationX') %}
+      <div class="claim-stat-row"><span>Location</span><span class="val">{{ player.locationX }}, {{ player.locationZ }}</span></div>
+      {% endif %}
+    </div>
+  </div>
+
+{% elif search_name %}
+  {# Error shown above #}
+{% else %}
+  <div class="hint-box">
+    <div class="hint-icon">🧙</div>
+    <div class="hint-title">Search for a player</div>
+    <div class="hint-sub">Enter an in-game username above to view their skills and profile.</div>
+  </div>
+{% endif %}
+
+<script>
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.profile-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+</script>
+{% endblock %}

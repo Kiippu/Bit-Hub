@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Embedded Tools — BitCraft Hub{% endblock %}
+
+{% block topbar_title %}<span>Embedded</span> Tools{% endblock %}
+
+{% block content %}
+<h1 class="page-heading fade-up">🖼️ Embedded Tools</h1>
+<p class="page-subheading">Crew-built sites and external tools, loaded right here.</p>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px">
+  {% for embed in embeds %}
+  <a class="card fade-up" href="/embed/{{ embed.id }}" style="text-decoration:none;display:block;animation-delay:{{ loop.index0 * 0.08 }}s">
+    <div class="card-title">{{ embed.name }}</div>
+    <p style="color:var(--text-secondary);font-size:15px;margin-bottom:12px">{{ embed.description }}</p>
+    <span class="tag tag-teal" style="font-size:11px">Open →</span>
+  </a>
+  {% else %}
+  <div class="card" style="color:var(--text-muted);font-style:italic">
+    No embeds registered yet. Add entries to the EMBEDS list in plugins/iframe_loader/routes.py.
+  </div>
+  {% endfor %}
+</div>
+
+<hr class="divider">
+
+<div class="card" style="font-size:14px; color:var(--text-secondary)">
+  <div class="card-title">How to add a site</div>
+  Edit <code style="color:var(--gold);background:var(--bg-deep);padding:2px 6px;border-radius:3px">plugins/iframe_loader/routes.py</code>
+  and add an entry to the <code style="color:var(--gold);background:var(--bg-deep);padding:2px 6px;border-radius:3px">EMBEDS</code> list with an id, name, url, and description.
+  Any URL works — hosted sites, local tools deployed online, even other BitCraft community pages.
+</div>
+{% endblock %}

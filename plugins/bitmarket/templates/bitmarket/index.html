@@ -1,0 +1,856 @@
+{% extends "base.html" %}
+{% block title %}BitMarket Terminal — BitCraft Hub{% endblock %}
+
+{% block head %}
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  /* ── Override hub shell for full-bleed terminal ── */
+  .content { padding: 0 !important; overflow: hidden !important; display: flex; flex-direction: column; }
+
+  :root {
+    --bm-bg:    #0a0c0f;
+    --bm-bg2:   #0f1215;
+    --bm-bg3:   #141820;
+    --bm-bg4:   #1a2030;
+    --bm-bd:    #1e2535;
+    --bm-bd2:   #2a3550;
+    --bm-text:  #c8d4e8;
+    --bm-dim:   #5a6a85;
+    --bm-faint: #2e3d55;
+    --bm-acc:   #00d4aa;
+    --bm-blue:  #0094ff;
+    --bm-red:   #ff4d6a;
+    --bm-green: #00d4aa;
+    --bm-yell:  #f5c542;
+    --bm-purp:  #9b59f5;
+    --mono: 'JetBrains Mono', monospace;
+    --disp: 'Syne', sans-serif;
+  }
+
+  #bm-root {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: var(--bm-bg);
+    color: var(--bm-text);
+    font-family: var(--mono);
+    font-size: 12px;
+    overflow: hidden;
+  }
+
+  /* ── TOPBAR ── */
+  #bm-topbar {
+    height: 44px;
+    background: var(--bm-bg2);
+    border-bottom: 1px solid var(--bm-bd);
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    gap: 20px;
+    flex-shrink: 0;
+  }
+  .bm-logo {
+    font-family: var(--disp);
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: var(--bm-acc);
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    white-space: nowrap;
+  }
+  .bm-logo span { color: var(--bm-dim); font-weight: 400; font-size: 12px; }
+
+  .ticker-strip {
+    flex: 1;
+    overflow: hidden;
+    mask-image: linear-gradient(to right, transparent, black 50px, black calc(100% - 50px), transparent);
+  }
+  .ticker-inner {
+    display: flex;
+    gap: 22px;
+    animation: marquee 60s linear infinite;
+    white-space: nowrap;
+  }
+  @keyframes marquee { from { transform: translateX(0) } to { transform: translateX(-50%) } }
+  .ticker-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--bm-dim); cursor: pointer; transition: color 0.15s; }
+  .ticker-item:hover { color: var(--bm-text); }
+  .ticker-item .tn { color: var(--bm-text); font-weight: 500; }
+  .ticker-item .tp { color: var(--bm-blue); }
+
+  .bm-topbar-right { display: flex; align-items: center; gap: 10px; }
+  .bm-region-sel {
+    background: var(--bm-bg3); border: 1px solid var(--bm-bd);
+    color: var(--bm-text); padding: 4px 8px;
+    font-family: var(--mono); font-size: 11px; border-radius: 4px; cursor: pointer; outline: none;
+  }
+  .bm-region-sel:focus { border-color: var(--bm-blue); }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--bm-green); box-shadow: 0 0 6px var(--bm-green); animation: pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+  /* ── MAIN ── */
+  #bm-main {
+    display: grid;
+    grid-template-columns: 250px 1fr 270px;
+    flex: 1;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  /* ── LEFT PANEL ── */
+  #bm-left {
+    border-right: 1px solid var(--bm-bd);
+    display: flex; flex-direction: column; overflow: hidden;
+    background: var(--bm-bg2);
+  }
+  .bm-search { margin: 8px; position: relative; }
+  .bm-search input {
+    width: 100%; background: var(--bm-bg3); border: 1px solid var(--bm-bd);
+    border-radius: 4px; padding: 7px 10px 7px 30px;
+    color: var(--bm-text); font-family: var(--mono); font-size: 11px; outline: none; transition: border-color 0.15s;
+  }
+  .bm-search input:focus { border-color: var(--bm-blue); }
+  .bm-search input::placeholder { color: var(--bm-faint); }
+  .bm-search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--bm-faint); font-size: 12px; }
+  .bm-filter-tabs { display: flex; gap: 4px; padding: 0 8px 8px; }
+  .bm-filter-tab {
+    flex: 1; background: var(--bm-bg3); border: 1px solid var(--bm-bd); color: var(--bm-dim);
+    padding: 4px 6px; font-family: var(--mono); font-size: 10px; border-radius: 3px; cursor: pointer; text-align: center; transition: all 0.15s;
+  }
+  .bm-filter-tab:hover { border-color: var(--bm-bd2); color: var(--bm-text); }
+  .bm-filter-tab.active { background: var(--bm-blue); border-color: var(--bm-blue); color: #fff; }
+  #bm-item-list { flex: 1; overflow-y: auto; }
+  #bm-item-list::-webkit-scrollbar { width: 3px; }
+  #bm-item-list::-webkit-scrollbar-thumb { background: var(--bm-bd2); border-radius: 2px; }
+
+  .bm-item-row {
+    display: grid; grid-template-columns: 30px 1fr auto; align-items: center;
+    padding: 5px 10px 5px 8px; border-bottom: 1px solid rgba(30,37,53,0.5);
+    cursor: pointer; transition: background 0.1s; gap: 8px;
+  }
+  .bm-item-row:hover { background: var(--bm-bg3); }
+  .bm-item-row.active { background: rgba(0,148,255,0.08); border-left: 2px solid var(--bm-blue); padding-left: 6px; }
+  .bm-icon-wrap { width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .bm-icon { width: 26px; height: 26px; object-fit: contain; image-rendering: pixelated; border-radius: 3px; }
+  .bm-icon-fb {
+    width: 26px; height: 26px; border-radius: 4px; background: var(--bm-bg4); border: 1px solid var(--bm-bd);
+    display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: var(--bm-dim); text-transform: uppercase;
+  }
+  .bm-item-name { font-size: 11px; color: var(--bm-text); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bm-item-cat  { font-size: 9px; color: var(--bm-faint); text-transform: uppercase; letter-spacing: 0.5px; }
+  .bm-item-price { font-size: 11px; color: var(--bm-blue); text-align: right; white-space: nowrap; }
+
+  /* ── CENTER ── */
+  #bm-center { display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+  #bm-toolbar {
+    height: 40px; background: var(--bm-bg2); border-bottom: 1px solid var(--bm-bd);
+    display: flex; align-items: center; padding: 0 12px; gap: 12px; flex-shrink: 0; overflow: hidden;
+  }
+  #bm-item-label { font-family: var(--disp); font-size: 15px; font-weight: 700; color: var(--bm-text); white-space: nowrap; }
+  #bm-item-price { font-size: 14px; font-weight: 600; color: var(--bm-blue); white-space: nowrap; }
+  #bm-item-chg { font-size: 11px; font-weight: 500; white-space: nowrap; }
+  #bm-item-chg.up { color: var(--bm-green); }
+  #bm-item-chg.dn { color: var(--bm-red); }
+  .bm-sep { width: 1px; height: 18px; background: var(--bm-bd); flex-shrink: 0; }
+  .bm-spacer { flex: 1; }
+  .bm-itabs { display: flex; gap: 2px; }
+  .bm-itab {
+    padding: 3px 7px; background: transparent; border: 1px solid transparent;
+    color: var(--bm-dim); font-family: var(--mono); font-size: 11px; border-radius: 3px; cursor: pointer; transition: all 0.15s;
+  }
+  .bm-itab:hover { color: var(--bm-text); border-color: var(--bm-bd); }
+  .bm-itab.active { background: var(--bm-bg3); border-color: var(--bm-bd2); color: var(--bm-blue); }
+  .bm-ctab { color: var(--bm-dim); }
+  .bm-ctab.active { color: var(--bm-acc) !important; }
+  .bm-stat-pill {
+    display: flex; align-items: center; gap: 5px; padding: 3px 8px;
+    background: var(--bm-bg3); border: 1px solid var(--bm-bd); border-radius: 3px; font-size: 10px; white-space: nowrap;
+  }
+  .bm-stat-pill .lbl { color: var(--bm-faint); }
+  .bm-stat-pill .val { color: var(--bm-text); }
+
+  #bm-chart-area { flex: 1; position: relative; min-height: 0; padding: 10px; background: var(--bm-bg); }
+  #bm-chart { width: 100% !important; height: 100% !important; }
+  .bm-loading {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    background: var(--bm-bg); z-index: 10; flex-direction: column; gap: 10px;
+  }
+  .bm-loading.hidden { display: none; }
+  .bm-spinner {
+    width: 28px; height: 28px; border: 2px solid var(--bm-bd);
+    border-top-color: var(--bm-blue); border-radius: 50%; animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .bm-loading-txt { color: var(--bm-dim); font-size: 11px; }
+  .bm-placeholder {
+    position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 12px; color: var(--bm-faint);
+  }
+  .bm-placeholder .big { font-family: var(--disp); font-size: 42px; font-weight: 800; color: var(--bm-bd2); letter-spacing: -2px; }
+  .bm-placeholder p { font-size: 12px; color: var(--bm-faint); }
+
+  #bm-strip {
+    height: 34px; background: var(--bm-bg2); border-top: 1px solid var(--bm-bd);
+    display: flex; align-items: center; padding: 0 12px; gap: 20px; flex-shrink: 0; overflow: hidden;
+  }
+  .bm-strip-stat { display: flex; align-items: center; gap: 5px; font-size: 10px; }
+  .bm-strip-stat .lbl { color: var(--bm-faint); }
+  .bm-strip-stat .val { color: var(--bm-text); font-weight: 500; }
+  .bm-strip-stat .val.dn { color: var(--bm-red); }
+  .bm-strip-stat .val.up { color: var(--bm-green); }
+
+  /* ── RIGHT ── */
+  #bm-right {
+    border-left: 1px solid var(--bm-bd); display: flex; flex-direction: column;
+    overflow: hidden; background: var(--bm-bg2); min-width: 0;
+  }
+  .bm-rtabs { display: flex; border-bottom: 1px solid var(--bm-bd); }
+  .bm-rtab {
+    flex: 1; padding: 9px 6px; background: transparent; border: none;
+    color: var(--bm-dim); font-family: var(--mono); font-size: 10px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.8px; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s;
+  }
+  .bm-rtab:hover { color: var(--bm-text); }
+  .bm-rtab.active { color: var(--bm-blue); border-bottom-color: var(--bm-blue); }
+  .bm-rcontent { flex: 1; overflow-y: auto; }
+  .bm-rcontent::-webkit-scrollbar { width: 3px; }
+  .bm-rcontent::-webkit-scrollbar-thumb { background: var(--bm-bd2); border-radius: 2px; }
+  .bm-section { display: none; }
+  .bm-section.active { display: block; }
+
+  /* Order Book */
+  .ob-hdr {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; padding: 6px 12px;
+    font-size: 9px; color: var(--bm-faint); text-transform: uppercase; letter-spacing: 0.8px;
+    border-bottom: 1px solid var(--bm-bd);
+  }
+  .ob-row {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; padding: 4px 12px; font-size: 11px;
+    transition: background 0.1s; position: relative; overflow: hidden;
+  }
+  .ob-row:hover { background: var(--bm-bg3); }
+  .ob-row .depth-bar { position: absolute; top:0; bottom:0; opacity:0.08; z-index:0; }
+  .ob-row > * { position: relative; z-index: 1; }
+  .ob-row.sell .depth-bar { background: var(--bm-red); right: 0; }
+  .ob-row.buy  .depth-bar { background: var(--bm-green); right: 0; }
+  .ob-row.sell .cp { color: var(--bm-red); font-weight: 600; }
+  .ob-row.buy  .cp { color: var(--bm-green); font-weight: 600; }
+  .cq { color: var(--bm-text); text-align: center; }
+  .ct { color: var(--bm-dim); text-align: right; }
+  .ob-spread {
+    display: flex; align-items: center; justify-content: center; padding: 5px;
+    font-size: 10px; color: var(--bm-faint); border-top: 1px solid var(--bm-bd);
+    border-bottom: 1px solid var(--bm-bd); background: var(--bm-bg3); gap: 6px;
+  }
+  .ob-spread .sv { color: var(--bm-yell); font-weight: 600; }
+
+  /* Trades */
+  .trade-row {
+    display: grid; grid-template-columns: 1fr auto auto; padding: 5px 12px; font-size: 11px;
+    border-bottom: 1px solid rgba(30,37,53,0.4); align-items: center; gap: 8px;
+  }
+  .trade-time { color: var(--bm-dim); font-size: 10px; }
+  .trade-price.sell { color: var(--bm-red); }
+  .trade-price.buy  { color: var(--bm-green); }
+  .trade-qty { color: var(--bm-text); text-align: right; }
+
+  /* Deals */
+  .deal-card {
+    margin: 8px; background: var(--bm-bg3); border: 1px solid var(--bm-bd); border-radius: 6px; padding: 10px 12px;
+  }
+  .deal-card:hover { border-color: var(--bm-bd2); }
+  .deal-name { font-weight: 600; font-size: 12px; color: var(--bm-text); margin-bottom: 6px; }
+  .deal-row { display: flex; justify-content: space-between; font-size: 10px; color: var(--bm-dim); margin-bottom: 2px; }
+  .deal-row .val { color: var(--bm-text); }
+  .deal-profit { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--bm-bd); display: flex; justify-content: space-between; }
+  .deal-profit .lbl { font-size: 10px; color: var(--bm-dim); }
+  .deal-profit .val { font-size: 12px; font-weight: 700; color: var(--bm-green); }
+
+  /* Panel loading state */
+  .bm-panel-loading {
+    display: flex; align-items: center; justify-content: center; padding: 32px;
+    color: var(--bm-dim); font-size: 11px; flex-direction: column; gap: 10px;
+  }
+
+  /* Toast */
+  #bm-toast-wrap {
+    position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 6px; z-index: 2000; pointer-events: none;
+  }
+  .bm-toast {
+    background: var(--bm-bg3); border: 1px solid var(--bm-bd2); color: var(--bm-text);
+    padding: 7px 14px; border-radius: 20px; font-size: 11px; opacity: 0; transform: translateY(6px);
+    transition: opacity 0.3s ease, transform 0.3s ease; white-space: nowrap;
+  }
+  .bm-toast.show { opacity: 1; transform: translateY(0); }
+  .bm-toast.info  { border-color: var(--bm-blue); color: var(--bm-blue); }
+  .bm-toast.warn  { border-color: var(--bm-yell); color: var(--bm-yell); }
+  .bm-toast.error { border-color: var(--bm-red);  color: var(--bm-red); }
+
+  /* Debug */
+  .dbg-line { padding: 5px 12px; border-bottom: 1px solid rgba(30,37,53,0.5); }
+  .dbg-ts   { color: var(--bm-faint); font-size: 9px; margin-right: 6px; }
+  .dbg-lbl  { color: var(--bm-yell); font-size: 10px; font-weight: 600; display: block; margin-bottom: 2px; }
+  .dbg-pre  { color: var(--bm-dim); font-size: 9px; white-space: pre-wrap; word-break: break-all; line-height: 1.4; }
+
+  @media (max-width: 900px) {
+    #bm-main { grid-template-columns: 220px 1fr 0; }
+    #bm-right { display: none; }
+  }
+</style>
+{% endblock %}
+
+{% block topbar_title %}<span>BitMarket</span> Trading Terminal{% endblock %}
+
+{% block content %}
+<div id="bm-root">
+
+  <!-- TOP BAR -->
+  <div id="bm-topbar">
+    <div class="bm-logo">⬡ BitMarket <span>/ Trading Terminal</span></div>
+    <div class="ticker-strip">
+      <div class="ticker-inner" id="ticker-inner">
+        <div class="ticker-item"><span class="tn">Loading...</span></div>
+      </div>
+    </div>
+    <div class="bm-topbar-right">
+      <select class="bm-region-sel" id="region-select">
+        <option value="">All Regions</option>
+      </select>
+      <div class="status-dot" id="status-dot" title="Live"></div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div id="bm-main">
+
+    <!-- LEFT: Item list -->
+    <div id="bm-left">
+      <div class="bm-search">
+        <span class="bm-search-icon">⌕</span>
+        <input type="text" id="bm-search" placeholder="Search items &amp; cargo…">
+      </div>
+      <div class="bm-filter-tabs">
+        <button class="bm-filter-tab active" data-filter="all">All</button>
+        <button class="bm-filter-tab" data-filter="buy">Buy</button>
+        <button class="bm-filter-tab" data-filter="sell">Sell</button>
+      </div>
+      <div id="bm-item-list">
+        <div class="bm-panel-loading"><div class="bm-spinner"></div><span>Fetching market…</span></div>
+      </div>
+    </div>
+
+    <!-- CENTER: Chart -->
+    <div id="bm-center">
+      <div id="bm-toolbar">
+        <span id="bm-item-label">—</span>
+        <span id="bm-item-price">—</span>
+        <span id="bm-item-chg"></span>
+        <div class="bm-sep"></div>
+        <div class="bm-itabs" id="interval-tabs">
+          <button class="bm-itab active" data-bucket="1 hour">1H</button>
+          <button class="bm-itab" data-bucket="4 hours">4H</button>
+          <button class="bm-itab" data-bucket="12 hours">12H</button>
+          <button class="bm-itab" data-bucket="1 day">1D</button>
+          <button class="bm-itab" data-bucket="1 week">1W</button>
+        </div>
+        <div class="bm-sep"></div>
+        <div class="bm-itabs" id="chart-type-tabs">
+          <button class="bm-itab bm-ctab active" data-type="line">Line</button>
+          <button class="bm-itab bm-ctab" data-type="bar">Vol</button>
+        </div>
+        <div class="bm-spacer"></div>
+        <div class="bm-stat-pill"><span class="lbl">24h avg</span><span class="val" id="v-24h">—</span></div>
+        <div class="bm-stat-pill"><span class="lbl">7d avg</span><span class="val" id="v-7d">—</span></div>
+        <div class="bm-stat-pill"><span class="lbl">ATH</span><span class="val" id="v-ath">—</span></div>
+      </div>
+
+      <div id="bm-chart-area">
+        <div class="bm-placeholder" id="bm-placeholder">
+          <div class="big">⬡</div>
+          <p>Select an item to view price history</p>
+        </div>
+        <div class="bm-loading hidden" id="bm-chart-loading">
+          <div class="bm-spinner"></div>
+          <div class="bm-loading-txt">Fetching price history…</div>
+        </div>
+        <canvas id="bm-chart" style="display:none"></canvas>
+      </div>
+
+      <div id="bm-strip">
+        <div class="bm-strip-stat"><span class="lbl">VOL 24H</span><span class="val" id="s-vol">—</span></div>
+        <div class="bm-strip-stat"><span class="lbl">TRADES</span><span class="val" id="s-trades">—</span></div>
+        <div class="bm-strip-stat"><span class="lbl">BEST SELL</span><span class="val dn" id="s-sell">—</span></div>
+        <div class="bm-strip-stat"><span class="lbl">BEST BUY</span><span class="val up" id="s-buy">—</span></div>
+        <div class="bm-strip-stat"><span class="lbl">ATL</span><span class="val" id="s-atl">—</span></div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Order Book / Trades / Deals / Debug -->
+    <div id="bm-right">
+      <div class="bm-rtabs">
+        <button class="bm-rtab active" data-tab="orderbook">Book</button>
+        <button class="bm-rtab" data-tab="trades">Trades</button>
+        <button class="bm-rtab" data-tab="deals">Deals</button>
+        <button class="bm-rtab" data-tab="debug" style="color:var(--bm-yell)">Debug</button>
+      </div>
+      <div class="bm-rcontent">
+        <div class="bm-section active" id="section-orderbook">
+          <div class="bm-panel-loading">Select an item</div>
+        </div>
+        <div class="bm-section" id="section-trades">
+          <div class="bm-panel-loading">Select an item</div>
+        </div>
+        <div class="bm-section" id="section-deals">
+          <div class="bm-panel-loading"><div class="bm-spinner"></div><span>Loading deals…</span></div>
+        </div>
+        <div class="bm-section" id="section-debug">
+          <div style="padding:8px 12px 4px;font-size:9px;color:var(--bm-faint);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--bm-bd)">API Request Log</div>
+          <div id="debug-log"></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /bm-main -->
+</div><!-- /bm-root -->
+
+<div id="bm-toast-wrap"></div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+let allItems = [], filteredItems = [];
+let selectedItem = null, selectedType = null;
+let currentBucket = '1 hour', currentChartType = 'line';
+let priceChart = null;
+let activeFilter = 'all', activeRightTab = 'orderbook';
+let currentRegion = '';
+let lastChartFP = '', lastBookFP = '';
+
+// ── API base — calls Flask proxy routes (no Node/CORS issues) ──────────────
+const API = '/bitmarket/api';
+
+// ── Debug log ──────────────────────────────────────────────────────────────
+const debugLines = [];
+function dbg(label, data) {
+  debugLines.unshift({ label, data, ts: new Date().toLocaleTimeString() });
+  if (debugLines.length > 30) debugLines.pop();
+  const el = document.getElementById('debug-log');
+  if (el) el.innerHTML = debugLines.map(l =>
+    `<div class="dbg-line"><span class="dbg-ts">${l.ts}</span><span class="dbg-lbl">${l.label}</span><pre class="dbg-pre">${JSON.stringify(l.data, null, 2)}</pre></div>`
+  ).join('');
+}
+
+// ── Fetch helper ───────────────────────────────────────────────────────────
+async function apiFetch(path, params = {}) {
+  const url = new URL(API + path, location.origin);
+  Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== '') url.searchParams.set(k, v); });
+  dbg(`→ GET ${path}`, params);
+  try {
+    const r = await fetch(url.toString());
+    const json = await r.json();
+    if (!r.ok) { dbg(`✗ HTTP ${r.status} ${path}`, json); throw new Error(`HTTP ${r.status}`); }
+    dbg(`← ${path}`, json);
+    return json;
+  } catch(e) {
+    dbg(`✗ ERR ${path}`, { error: e.message });
+    throw e;
+  }
+}
+
+// ── Toast ──────────────────────────────────────────────────────────────────
+function toast(msg, type = 'info') {
+  const el = document.createElement('div');
+  el.className = `bm-toast ${type}`;
+  el.textContent = msg;
+  document.getElementById('bm-toast-wrap').appendChild(el);
+  requestAnimationFrame(() => el.classList.add('show'));
+  setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 400); }, 3500);
+}
+
+// ── Formatters ─────────────────────────────────────────────────────────────
+function fmt(n) {
+  if (n === null || n === undefined) return '—';
+  n = Number(n); if (isNaN(n)) return '—';
+  if (n >= 1000000) return (n/1000000).toFixed(2) + 'M';
+  if (n >= 1000)    return (n/1000).toFixed(1) + 'K';
+  if (n < 10)       return n.toFixed(2);
+  return n.toFixed(0);
+}
+function fmtInt(n) { n = Number(n); return isNaN(n) ? '—' : n.toLocaleString(); }
+
+// Field normalizers — handle all plausible API field name variations
+function price(o) { return Number(o.unitPrice ?? o.priceThreshold ?? o.pricePerUnit ?? o.price ?? o.vwap ?? o.avgPrice ?? 0); }
+function qty(o)   { return Number(o.quantity ?? o.qty ?? o.tradeCount ?? o.volume ?? 0); }
+
+function fp(data) { return JSON.stringify(data).length + '|' + JSON.stringify(data).slice(0,200); }
+
+// ── Init ───────────────────────────────────────────────────────────────────
+async function init() {
+  await Promise.all([loadRegions(), loadMarket(), loadDeals()]);
+  buildTicker();
+}
+
+// ── Regions ────────────────────────────────────────────────────────────────
+async function loadRegions() {
+  try {
+    const data = await apiFetch('/regions');
+    const sel = document.getElementById('region-select');
+    const regions = data.regions || data || [];
+    regions.forEach(r => {
+      const o = document.createElement('option');
+      o.value = r.regionId; o.textContent = r.regionName || r.name || r.regionId;
+      sel.appendChild(o);
+    });
+    sel.addEventListener('change', () => {
+      currentRegion = sel.value;
+      if (selectedItem) loadPriceHistory(selectedItem, selectedType, currentBucket);
+    });
+  } catch(e) { /* regions are optional */ }
+}
+
+// ── Market item list ───────────────────────────────────────────────────────
+async function loadMarket() {
+  try {
+    const params = {};
+    if (activeFilter === 'sell') params.hasSellOrders = true;
+    if (activeFilter === 'buy')  params.hasBuyOrders  = true;
+    if (activeFilter === 'all')  params.hasOrders      = true;
+
+    const raw = await apiFetch('/market', params);
+    const d = (raw && raw.data && typeof raw.data === 'object') ? raw.data : raw;
+
+    let rawItems = [];
+    if (Array.isArray(d)) rawItems = d;
+    else if (Array.isArray(d.items)) rawItems = d.items;
+    else if (Array.isArray(d.data))  rawItems = d.data;
+
+    let rawCargo = [];
+    if (Array.isArray(d.cargo))  rawCargo = d.cargo;
+    if (Array.isArray(d.cargos)) rawCargo = d.cargos;
+
+    const items  = rawItems.map(i => ({ ...i, _type: (i.itemType===1||i.type==='cargo'||i.isCargo===true)?'cargo':'item' }));
+    const cargos = rawCargo.map(c => ({ ...c, _type: 'cargo' }));
+
+    allItems = [...items, ...cargos].sort((a, b) => (b.sellOrderCount||0) - (a.sellOrderCount||0));
+
+    if (!allItems.length) {
+      dbg('loadMarket: EMPTY — raw keys', Object.keys(raw||{}));
+      document.getElementById('bm-item-list').innerHTML = '<div class="bm-panel-loading" style="color:var(--bm-dim)">No items — check Debug tab</div>';
+      return;
+    }
+    filterItems(document.getElementById('bm-search').value);
+  } catch(e) {
+    document.getElementById('bm-item-list').innerHTML = `<div class="bm-panel-loading" style="color:var(--bm-red)">Market unavailable<br><span style="font-size:10px;color:var(--bm-faint)">${e.message}</span></div>`;
+  }
+}
+
+function filterItems(q = '') {
+  const ql = q.toLowerCase();
+  filteredItems = allItems.filter(i => (i.name || i.itemName || '').toLowerCase().includes(ql));
+  renderItemList();
+}
+
+function renderItemList() {
+  const list = document.getElementById('bm-item-list');
+  if (!filteredItems.length) { list.innerHTML = '<div class="bm-panel-loading" style="color:var(--bm-dim)">No items found</div>'; return; }
+  list.innerHTML = filteredItems.map((item, idx) => {
+    const name = item.name || item.itemName || 'Unknown';
+    const cat  = item.category || item.tag || item._type || '';
+    const p    = item.lowestSellPrice ?? item.marketStats?.lowestSell ?? 0;
+    const bp   = item.highestBuyPrice ?? item.marketStats?.highestBuy ?? 0;
+    const dp   = p > 0 ? p : bp;
+    const isAct = selectedItem === item.id && selectedType === item._type;
+    const iconUrl = item.iconAssetName
+      ? `https://bitjita.com/static/items/${item.iconAssetName.split('/').map(encodeURIComponent).join('/')}.webp`
+      : null;
+    const icon = iconUrl
+      ? `<img class="bm-icon" src="${iconUrl}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" loading="lazy"><div class="bm-icon-fb" style="display:none">${name.charAt(0)}</div>`
+      : `<div class="bm-icon-fb">${name.charAt(0)}</div>`;
+    return `<div class="bm-item-row ${isAct?'active':''}" data-idx="${idx}" onclick="selectItem(${idx})">
+      <div class="bm-icon-wrap">${icon}</div>
+      <div><div class="bm-item-name">${name}</div><div class="bm-item-cat">${cat}</div></div>
+      <div class="bm-item-price">${dp>0?fmt(dp):'—'}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Select item ────────────────────────────────────────────────────────────
+async function selectItem(idx) {
+  const item = filteredItems[idx];
+  if (!item) return;
+  selectedItem = item.id;
+  selectedType = item._type;
+  lastChartFP = ''; lastBookFP = '';
+
+  document.getElementById('bm-placeholder').style.display = 'none';
+  document.getElementById('bm-item-label').textContent = item.name || item.itemName || '?';
+  document.getElementById('bm-item-price').textContent = '...';
+  document.getElementById('bm-item-chg').textContent = '';
+  document.querySelectorAll('.bm-item-row').forEach((r, i) => r.classList.toggle('active', i === idx));
+
+  await Promise.all([
+    loadPriceHistory(item.id, item._type, currentBucket),
+    loadOrderBook(item.id, item._type),
+    loadRecentTrades(item.id, item._type),
+  ]);
+}
+
+// ── Price history + chart ──────────────────────────────────────────────────
+async function loadPriceHistory(itemId, type, bucket) {
+  const loading = document.getElementById('bm-chart-loading');
+  const canvas  = document.getElementById('bm-chart');
+  loading.classList.remove('hidden');
+  canvas.style.display = 'none';
+  try {
+    const params = { bucket, limit: 500 };
+    if (currentRegion) params.regionId = currentRegion;
+    const data = await apiFetch(`/market/${type}s/${itemId}/price-history`, params);
+    const pd = data.priceData || [];
+    const st = data.priceStats || {};
+    const tr = data.recentTrades || [];
+
+    document.getElementById('s-vol').textContent    = st.volume24h    ? fmt(st.volume24h)    : '—';
+    document.getElementById('s-trades').textContent = tr.length        ? tr.length            : '—';
+    document.getElementById('s-sell').textContent   = st.lowestSell   ? fmt(st.lowestSell)   : '—';
+    document.getElementById('s-buy').textContent    = st.highestBuy   ? fmt(st.highestBuy)   : '—';
+    document.getElementById('s-atl').textContent    = st.allTimeLow   ? fmt(st.allTimeLow)   : '—';
+    document.getElementById('v-24h').textContent    = st.avg24h       ? fmt(st.avg24h)       : '—';
+    document.getElementById('v-7d').textContent     = st.avg7d        ? fmt(st.avg7d)        : '—';
+    document.getElementById('v-ath').textContent    = st.allTimeHigh  ? fmt(st.allTimeHigh)  : '—';
+
+    if (!pd.length) {
+      loading.classList.add('hidden');
+      document.getElementById('bm-placeholder').style.display = 'flex';
+      document.getElementById('bm-placeholder').querySelector('p').textContent = 'No price history available';
+      return;
+    }
+
+    pd.sort((a, b) => new Date(a.bucket||a.time||a.timestamp) - new Date(b.bucket||b.time||b.timestamp));
+    const labels  = pd.map(p => { const d = new Date(p.bucket||p.time||p.timestamp); return d.toLocaleDateString('en-AU',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}); });
+    const prices  = pd.map(p => p.vwap || p.avgPrice || p.price || p.close || 0);
+    const volumes = pd.map(p => p.volume || p.quantity || p.tradeCount || 0);
+
+    const latest  = prices[prices.length - 1];
+    const first   = prices[0];
+    const chgPct  = first > 0 ? ((latest - first) / first * 100) : 0;
+    document.getElementById('bm-item-price').textContent = fmt(latest);
+    const chgEl = document.getElementById('bm-item-chg');
+    chgEl.textContent = `${chgPct>=0?'+':''}${chgPct.toFixed(2)}%`;
+    chgEl.className   = chgPct >= 0 ? 'up' : 'dn';
+
+    renderChart(labels, prices, volumes);
+    loading.classList.add('hidden');
+    canvas.style.display = 'block';
+  } catch(e) {
+    loading.classList.add('hidden');
+    toast('Price history unavailable', 'error');
+  }
+}
+
+function renderChart(labels, prices, volumes) {
+  if (priceChart) { priceChart.destroy(); priceChart = null; }
+  const ctx  = document.getElementById('bm-chart').getContext('2d');
+  const isLn = currentChartType === 'line';
+  const grad = ctx.createLinearGradient(0, 0, 0, 400);
+  grad.addColorStop(0, 'rgba(0,148,255,0.25)');
+  grad.addColorStop(1, 'rgba(0,148,255,0.00)');
+
+  const ds = isLn ? {
+    label: 'VWAP', data: prices, borderColor: '#0094ff', backgroundColor: grad,
+    borderWidth: 2, fill: true, tension: 0.3,
+    pointRadius: labels.length > 100 ? 0 : 3,
+    pointBackgroundColor: '#0094ff', pointHoverRadius: 5,
+  } : {
+    label: 'Volume', data: volumes,
+    backgroundColor: volumes.map(() => 'rgba(0,212,170,0.5)'),
+    borderColor: 'rgba(0,212,170,0.8)', borderWidth: 1, type: 'bar',
+  };
+
+  priceChart = new Chart(ctx, {
+    type: isLn ? 'line' : 'bar',
+    data: { labels, datasets: [ds] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#141820', borderColor: '#1e2535', borderWidth: 1,
+          titleColor: '#5a6a85', bodyColor: '#c8d4e8',
+          titleFont: { family: 'JetBrains Mono', size: 10 },
+          bodyFont:  { family: 'JetBrains Mono', size: 12 },
+          callbacks: { label: c => ` ${isLn?'Price':'Vol'}: ${fmt(c.parsed.y)}` }
+        }
+      },
+      scales: {
+        x: { ticks: { color:'#2e3d55', font:{family:'JetBrains Mono',size:9}, maxTicksLimit:8, maxRotation:0 }, grid:{color:'rgba(30,37,53,0.5)'}, border:{color:'rgba(30,37,53,0.5)'} },
+        y: { position:'right', ticks:{color:'#5a6a85',font:{family:'JetBrains Mono',size:10},callback:v=>fmt(v)}, grid:{color:'rgba(30,37,53,0.4)'}, border:{color:'rgba(30,37,53,0.4)'} }
+      }
+    }
+  });
+}
+
+// ── Order Book ─────────────────────────────────────────────────────────────
+async function loadOrderBook(itemId, type) {
+  if (activeRightTab !== 'orderbook') return;
+  const sec = document.getElementById('section-orderbook');
+  sec.innerHTML = '<div class="bm-panel-loading"><div class="bm-spinner"></div></div>';
+  try {
+    const data  = await apiFetch(`/market/${type}/${itemId}`);
+    const first = data.sellOrders?.[0] || data.buyOrders?.[0];
+    if (first) dbg('order[0] raw', first);
+
+    const st    = data.stats || {};
+    const sells = (data.sellOrders || []).slice(0,15).sort((a,b) => price(a)-price(b));
+    const buys  = (data.buyOrders  || []).slice(0,15).sort((a,b) => price(b)-price(a));
+    const bSell = sells.length ? price(sells[0]) : (st.lowestSell ?? 0);
+    const bBuy  = buys.length  ? price(buys[0])  : (st.highestBuy ?? 0);
+    const spread= (bSell && bBuy) ? bSell - bBuy : (st.orderBookSpread ?? 0);
+    const maxQ  = Math.max(...sells.map(qty), ...buys.map(qty), 1);
+
+    const hdr    = `<div class="ob-hdr"><span>Price</span><span style="text-align:center">Qty</span><span style="text-align:right">Total</span></div>`;
+    const sellH  = sells.length
+      ? sells.map(o => { const p=price(o),q=qty(o),w=Math.round((q/maxQ)*100); return `<div class="ob-row sell"><div class="depth-bar" style="width:${w}%"></div><span class="cp">${fmt(p)}</span><span class="cq">${fmtInt(q)}</span><span class="ct">${fmt(p*q)}</span></div>`; }).join('')
+      : `<div style="padding:8px;font-size:10px;color:var(--bm-faint);text-align:center">No sell orders</div>`;
+    const spreH  = `<div class="ob-spread">Spread <span class="sv">${spread>0?fmt(spread):'—'}</span>${bSell&&bBuy?`<span style="color:var(--bm-faint)">(${((spread/bSell)*100).toFixed(2)}%)</span>`:''} &nbsp;·&nbsp; S:${st.sellOrderCount??0} B:${st.buyOrderCount??0}</div>`;
+    const buyH   = buys.length
+      ? buys.map(o => { const p=price(o),q=qty(o),w=Math.round((q/maxQ)*100); return `<div class="ob-row buy"><div class="depth-bar" style="width:${w}%"></div><span class="cp">${fmt(p)}</span><span class="cq">${fmtInt(q)}</span><span class="ct">${fmt(p*q)}</span></div>`; }).join('')
+      : `<div style="padding:8px;font-size:10px;color:var(--bm-faint);text-align:center">No buy orders</div>`;
+    sec.innerHTML = hdr + sellH + spreH + buyH;
+  } catch(e) {
+    sec.innerHTML = `<div class="bm-panel-loading" style="color:var(--bm-dim)">Order book unavailable</div>`;
+  }
+}
+
+// ── Recent Trades ──────────────────────────────────────────────────────────
+async function loadRecentTrades(itemId, type) {
+  if (activeRightTab !== 'trades') return;
+  const sec = document.getElementById('section-trades');
+  sec.innerHTML = '<div class="bm-panel-loading"><div class="bm-spinner"></div></div>';
+  try {
+    const pluralType = type === 'item' ? 'items' : 'cargo';
+    const data   = await apiFetch(`/market/${pluralType}/${itemId}/price-history`, { limit: 50, bucket: '1 hour' });
+    const trades = data.recentTrades || [];
+    if (!trades.length) { sec.innerHTML = '<div class="bm-panel-loading" style="color:var(--bm-dim)">No recent trades</div>'; return; }
+    sec.innerHTML = `<div class="ob-hdr"><span>Time</span><span style="text-align:right">Price</span><span style="text-align:right">Qty</span></div>` +
+      trades.slice(0,60).map(t => {
+        const p = price(t), q = qty(t);
+        const ts = new Date(t.timestamp||t.completedAt||t.time||t.createdAt);
+        const timeStr = isNaN(ts) ? '—' : ts.toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+        const side = (t.orderType==='sell'||t.type==='sell') ? 'sell' : 'buy';
+        return `<div class="trade-row"><span class="trade-time">${timeStr}</span><span class="trade-price ${side}">${fmt(p)}</span><span class="trade-qty">${fmtInt(q)}</span></div>`;
+      }).join('');
+  } catch(e) { sec.innerHTML = `<div class="bm-panel-loading" style="color:var(--bm-dim)">Trades unavailable</div>`; }
+}
+
+// ── Deals ──────────────────────────────────────────────────────────────────
+async function loadDeals() {
+  const sec = document.getElementById('section-deals');
+  try {
+    const data  = await apiFetch('/market/deals');
+    const deals = Array.isArray(data) ? data : (data.arbitrage || data.deals || []);
+    if (deals.length) dbg('deals[0] raw', deals[0]);
+    if (!deals.length) { sec.innerHTML = '<div class="bm-panel-loading" style="color:var(--bm-dim)">No arbitrage deals found</div>'; return; }
+    sec.innerHTML = deals.slice(0,20).map(d => {
+      const name   = d.name || d.itemName || d.item?.name || 'Unknown';
+      const buyAt  = d.buyPrice  ?? d.lowestSellPrice ?? d.buyAt  ?? 0;
+      const sellAt = d.sellPrice ?? d.highestBuyPrice ?? d.sellAt ?? 0;
+      const profit = d.profit ?? d.profitPerUnit ?? (sellAt - buyAt);
+      const pct    = buyAt > 0 ? ((profit/buyAt)*100).toFixed(1) : '—';
+      const buyR   = d.buyRegionName  || d.buyRegion  || '';
+      const sellR  = d.sellRegionName || d.sellRegion || '';
+      return `<div class="deal-card">
+        <div class="deal-name">${name}</div>
+        <div class="deal-row"><span>Buy at</span><span class="val">${buyAt>0?fmt(buyAt):'—'}</span></div>
+        <div class="deal-row"><span>Sell at</span><span class="val">${sellAt>0?fmt(sellAt):'—'}</span></div>
+        ${buyR?`<div class="deal-row"><span>Route</span><span class="val">${buyR} → ${sellR||'?'}</span></div>`:''}
+        <div class="deal-profit"><span class="lbl">Profit/unit</span><span class="val">${profit>0?'+':''}${fmt(profit)} (${pct}%)</span></div>
+      </div>`;
+    }).join('');
+  } catch(e) { sec.innerHTML = '<div class="bm-panel-loading" style="color:var(--bm-dim)">Deals unavailable</div>'; }
+}
+
+// ── Ticker ─────────────────────────────────────────────────────────────────
+function buildTicker() {
+  const top = allItems.filter(i => i.lowestSellPrice || i.highestBuyPrice).slice(0, 30);
+  if (!top.length) return;
+  const inner = document.getElementById('ticker-inner');
+  const items = [...top, ...top];
+  inner.innerHTML = items.map(i => {
+    const name = i.name || i.itemName || '?';
+    const p    = i.lowestSellPrice || i.highestBuyPrice || 0;
+    return `<div class="ticker-item"><span class="tn">${name}</span><span class="tp">${fmt(p)}</span></div>`;
+  }).join('');
+}
+
+// ── Smart auto-refresh ─────────────────────────────────────────────────────
+async function smartRefreshChart() {
+  if (!selectedItem) return;
+  try {
+    const params = { bucket: currentBucket, limit: 500 };
+    if (currentRegion) params.regionId = currentRegion;
+    const data = await apiFetch(`/market/${selectedType}s/${selectedItem}/price-history`, params);
+    const f = fp(data.priceData || []);
+    if (f === lastChartFP) return;
+    lastChartFP = f;
+    toast('📈 Chart updated', 'info');
+    await loadPriceHistory(selectedItem, selectedType, currentBucket);
+  } catch(e) {}
+}
+
+async function smartRefreshBook() {
+  if (!selectedItem || activeRightTab !== 'orderbook') return;
+  try {
+    const data = await apiFetch(`/market/${selectedType}/${selectedItem}`);
+    const f = fp([...(data.sellOrders||[]),...(data.buyOrders||[])]);
+    if (f === lastBookFP) return;
+    lastBookFP = f;
+    toast('📒 Order book updated', 'info');
+    loadOrderBook(selectedItem, selectedType);
+  } catch(e) {}
+}
+
+setInterval(() => { loadMarket(); smartRefreshChart(); smartRefreshBook(); }, 60000);
+
+// ── Event listeners ────────────────────────────────────────────────────────
+document.getElementById('bm-search').addEventListener('input', e => filterItems(e.target.value));
+
+document.querySelectorAll('.bm-filter-tab').forEach(btn => btn.addEventListener('click', () => {
+  document.querySelectorAll('.bm-filter-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  activeFilter = btn.dataset.filter;
+  loadMarket();
+}));
+
+document.querySelectorAll('#interval-tabs .bm-itab').forEach(btn => btn.addEventListener('click', () => {
+  document.querySelectorAll('#interval-tabs .bm-itab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentBucket = btn.dataset.bucket;
+  if (selectedItem) loadPriceHistory(selectedItem, selectedType, currentBucket);
+}));
+
+document.querySelectorAll('#chart-type-tabs .bm-itab').forEach(btn => btn.addEventListener('click', () => {
+  document.querySelectorAll('#chart-type-tabs .bm-itab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentChartType = btn.dataset.type;
+  if (selectedItem) loadPriceHistory(selectedItem, selectedType, currentBucket);
+}));
+
+document.querySelectorAll('.bm-rtab').forEach(btn => btn.addEventListener('click', () => {
+  document.querySelectorAll('.bm-rtab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  activeRightTab = btn.dataset.tab;
+  document.querySelectorAll('.bm-section').forEach(s => s.classList.remove('active'));
+  document.getElementById(`section-${activeRightTab}`).classList.add('active');
+  if (selectedItem) {
+    if (activeRightTab === 'orderbook') loadOrderBook(selectedItem, selectedType);
+    if (activeRightTab === 'trades')    loadRecentTrades(selectedItem, selectedType);
+  }
+}));
+
+// ── Go ─────────────────────────────────────────────────────────────────────
+init();
+</script>
+{% endblock %}

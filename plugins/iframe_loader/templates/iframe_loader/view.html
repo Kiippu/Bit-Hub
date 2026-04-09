@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}{{ embed.name }} — BitCraft Hub{% endblock %}
+
+{% block head %}
+<style>
+  .embed-frame-wrap {
+    position: relative;
+    width: 100%;
+    height: calc(100vh - 180px);
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    background: var(--bg-deep);
+  }
+
+  .embed-frame-wrap iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+  }
+
+  .embed-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .embed-url {
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 5px 12px;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .btn-outline {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    padding: 5px 14px;
+    border-radius: 4px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.18s;
+    white-space: nowrap;
+  }
+
+  .btn-outline:hover {
+    border-color: var(--gold-dim);
+    color: var(--gold);
+  }
+</style>
+{% endblock %}
+
+{% block topbar_title %}<span>{{ embed.name }}</span>{% endblock %}
+
+{% block content %}
+<h1 class="page-heading fade-up">🖼️ {{ embed.name }}</h1>
+<p class="page-subheading">{{ embed.description }}</p>
+
+<div class="embed-toolbar">
+  <a href="/embed" class="btn-outline">← All Tools</a>
+  <div class="embed-url">{{ embed.url }}</div>
+  <a href="{{ embed.url }}" target="_blank" class="btn-outline">Open in new tab ↗</a>
+</div>
+
+<div class="embed-frame-wrap fade-up">
+  <iframe src="{{ embed.url }}"
+          title="{{ embed.name }}"
+          loading="lazy"
+          allowfullscreen>
+  </iframe>
+</div>
+{% endblock %}

@@ -1,0 +1,10 @@
+{
+  "id": "iframe_loader",
+  "name": "Iframe Loader",
+  "description": "Embed any existing HTML site or tool your crew has built. Zero rewriting needed.",
+  "icon": "🖼️",
+  "author": "Hub Core",
+  "route_prefix": "/embed",
+  "tag": "TOOL",
+  "version": "1.0"
+}
