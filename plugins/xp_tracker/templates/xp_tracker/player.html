@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+{% block title %}{{ player_info.username if player_info else player_id }} — XP Tracker — BitCraft Hub{% endblock %}
+{% block topbar_title %}<span>XP</span> Tracker — Player{% endblock %}
+
+{% block content %}
+<style>
+  .xpt-back         { display: inline-flex; align-items: center; gap: 6px; color: var(--text-muted);
+                      text-decoration: none; font-size: 13px; margin-bottom: 20px; transition: color 0.15s; }
+  .xpt-back:hover   { color: var(--gold-light); }
+
+  .xpt-controls     { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 24px; }
+  .xpt-select       { background: var(--bg-raised); border: 1px solid var(--border); border-radius: 5px;
+                      padding: 7px 12px; color: var(--text-primary); font-family: inherit; font-size: 14px; cursor: pointer; }
+  .xpt-select:focus { outline: none; border-color: var(--gold-dim); }
+
+  .tab-group        { display: flex; gap: 4px; }
+  .tab-btn          { background: var(--bg-raised); border: 1px solid var(--border); border-radius: 4px;
+                      padding: 6px 14px; color: var(--text-secondary); font-family: 'Cinzel', serif;
+                      font-size: 10px; letter-spacing: 0.12em; cursor: pointer; transition: all 0.15s; }
+  .tab-btn.active,
+  .tab-btn:hover    { color: var(--gold-light); border-color: var(--gold-dim); background: rgba(200,146,42,0.08); }
+
+  .chart-card       { padding: 0; overflow: hidden; margin-bottom: 24px; }
+  .chart-header     { padding: 16px 20px 0; }
+  .chart-area       { position: relative; height: 340px; padding: 12px 16px 16px; }
+  .chart-empty      { display: flex; align-items: center; justify-content: center; height: 340px;
+                      color: var(--text-muted); font-style: italic; font-size: 15px; }
+
+  .gains-grid       { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+  .gain-card        { background: var(--bg-raised); border: 1px solid var(--border); border-radius: 6px;
+                      padding: 14px 16px; transition: border-color 0.18s; }
+  .gain-card:hover  { border-color: var(--border-glow); }
+  .gain-skill       { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .gain-icon        { font-size: 18px; }
+  .gain-name        { font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 0.1em; color: var(--text-secondary); }
+  .gain-xp          { font-size: 20px; color: var(--teal-light); font-variant-numeric: tabular-nums; }
+  .gain-xp.zero     { color: var(--text-muted); font-size: 15px; }
+  .gain-level       { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .gain-level .up   { color: var(--gold-light); }
+
+  .stat-bar         { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-bottom: 24px; }
+  .stat-item        { background: var(--bg-raised); border: 1px solid var(--border); border-radius: 6px;
+                      padding: 14px 18px; text-align: center; }
+  .stat-val         { font-size: 22px; color: var(--gold-light); font-variant-numeric: tabular-nums; display: block; }
+  .stat-lbl         { font-size: 11px; color: var(--text-muted); font-family: 'Cinzel', serif;
+                      letter-spacing: 0.15em; text-transform: uppercase; }
+  .no-data          { text-align:center; padding:48px; color:var(--text-muted); font-style:italic; }
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+
+<a href="{{ url_for('xp_tracker.index') }}" class="xpt-back">← Back to Tracker</a>
+
+<h1 class="page-heading">
+  {{ player_info.username if player_info else player_id }}
+  {% if player_info and player_info.empire_name %}
+    <span style="font-size:14px;color:var(--text-muted);font-weight:400"> · {{ player_info.empire_name }}</span>
+  {% endif %}
+</h1>
+<p class="page-subheading">XP history · {{ snapshot_count }} snapshot{{ 's' if snapshot_count != 1 else '' }} recorded</p>
+
+<!-- Controls -->
+<div class="xpt-controls">
+  <span style="font-size:13px;color:var(--text-muted)">Time window:</span>
+  <div class="tab-group" id="window-tabs">
+    {% for w in time_windows %}
+    <button class="tab-btn {% if w == window %}active{% endif %}" onclick="setWindow('{{ w }}')">{{ w }}</button>
+    {% endfor %}
+  </div>
+  <span style="font-size:13px;color:var(--text-muted);margin-left:8px">Skill:</span>
+  <select class="xpt-select" id="skill-select" onchange="setSkill(this.value)">
+    <option value="" {% if not skill_id %}selected{% endif %}>Total XP</option>
+    {% for skill in skills %}
+    <option value="{{ skill.id }}" {% if skill_id == skill.id|string %}selected{% endif %}>
+      {{ skill_icons.get(skill.name, '') }} {{ skill.name }}
+    </option>
+    {% endfor %}
+  </select>
+</div>
+
+{% if snapshot_count < 2 %}
+<div class="card">
+  <div class="no-data">
+    {% if snapshot_count == 0 %}
+      No snapshots yet. The poller will collect data on its next cycle.
+    {% else %}
+      Only 1 snapshot so far — need at least 2 to show gains.
+    {% endif %}
+  </div>
+</div>
+{% else %}
+
+<!-- Summary stats -->
+<div class="stat-bar" id="stat-bar">
+  <div class="stat-item">
+    <span class="stat-val" id="stat-total-gain">—</span>
+    <span class="stat-lbl">XP Gained</span>
+  </div>
+  <div class="stat-item">
+    <span class="stat-val" id="stat-skills-levelled">—</span>
+    <span class="stat-lbl">Skills Levelled</span>
+  </div>
+  <div class="stat-item">
+    <span class="stat-val" id="stat-snapshots">{{ snapshot_count }}</span>
+    <span class="stat-lbl">Snapshots</span>
+  </div>
+</div>
+
+<!-- Chart -->
+<div class="card chart-card">
+  <div class="chart-header">
+    <div class="card-title" id="chart-title">XP Gained Over Time</div>
+  </div>
+  <div class="chart-area">
+    <div class="chart-empty" id="chart-empty" style="display:none">Not enough data for this window.</div>
+    <canvas id="xp-chart"></canvas>
+  </div>
+</div>
+
+<!-- Per-skill gains table -->
+<div class="card">
+  <div class="card-title">Skill Breakdown · <span style="color:var(--text-secondary);font-size:11px">{{ window }} window</span></div>
+  {% if skill_gains %}
+  <div class="gains-grid">
+    {% for s in skill_gains %}
+    {% set gain = s.gain %}
+    <div class="gain-card" onclick="setSkill('{{ s.id }}')" style="cursor:pointer" title="Click to chart {{ s.name }}">
+      <div class="gain-skill">
+        <span class="gain-icon">{{ skill_icons.get(s.name, '•') }}</span>
+        <span class="gain-name">{{ s.name }}</span>
+      </div>
+      <div class="gain-xp {% if gain == 0 %}zero{% endif %}">
+        {% if gain > 0 %}+{{ "{:,}".format(gain) }}{% else %}—{% endif %}
+      </div>
+      <div class="gain-level">
+        Lv {{ s.start_level }} → <span class="{% if s.levelled_up %}up{% endif %}">Lv {{ s.end_level }}</span>
+        {% if s.levelled_up %} ↑{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="no-data">No XP gains recorded in this window.</div>
+  {% endif %}
+</div>
+{% endif %}
+
+<script>
+const PLAYER_ID  = "{{ player_id }}";
+let   currentWindow = "{{ window }}";
+let   currentSkill  = "{{ skill_id or '' }}";
+let   xpChart       = null;
+
+function setWindow(w) {
+  currentWindow = w;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.textContent === w));
+  loadChart();
+  updateURL();
+}
+
+function setSkill(sid) {
+  currentSkill = sid;
+  document.getElementById('skill-select').value = sid;
+  loadChart();
+  updateURL();
+}
+
+function updateURL() {
+  const params = new URLSearchParams({ window: currentWindow });
+  if (currentSkill) params.set('skill', currentSkill);
+  history.replaceState({}, '', `?${params}`);
+}
+
+async function loadChart() {
+  const params = new URLSearchParams({ window: currentWindow });
+  if (currentSkill) params.set('skill', currentSkill);
+
+  const data = await fetch(`/xp-tracker/api/history/${PLAYER_ID}?${params}`)
+    .then(r => r.json())
+    .catch(() => null);
+
+  const emptyEl = document.getElementById('chart-empty');
+  const canvas  = document.getElementById('xp-chart');
+
+  if (!data || data.labels.length < 2) {
+    emptyEl.style.display = 'flex';
+    canvas.style.display  = 'none';
+    document.getElementById('stat-total-gain').textContent = '—';
+    return;
+  }
+
+  emptyEl.style.display = 'none';
+  canvas.style.display  = 'block';
+
+  // Update summary stat
+  const totalGain = data.gains[data.gains.length - 1];
+  document.getElementById('stat-total-gain').textContent = '+' + totalGain.toLocaleString();
+
+  renderChart(data.labels, data.gains);
+}
+
+function renderChart(labels, gains) {
+  if (xpChart) { xpChart.destroy(); xpChart = null; }
+  const ctx = document.getElementById('xp-chart').getContext('2d');
+
+  xpChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'XP Gained',
+        data: gains,
+        borderColor: '#3dbdaa',
+        backgroundColor: 'rgba(61,189,170,0.08)',
+        borderWidth: 2,
+        pointRadius: gains.length > 50 ? 0 : 3,
+        pointHoverRadius: 5,
+        fill: true,
+        tension: 0.3,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a2230',
+          borderColor: '#2a3a50',
+          borderWidth: 1,
+          titleColor: '#e8dcc8',
+          bodyColor: '#8a9ab0',
+          callbacks: {
+            title: items => new Date(items[0].parsed.x).toLocaleString(),
+            label: item => `+${item.parsed.y.toLocaleString()} XP`,
+          }
+        },
+      },
+      scales: {
+        x: {
+          type: 'time',
+          time: { tooltipFormat: 'PPp' },
+          grid: { color: '#1a2230' },
+          ticks: { color: '#4a5a6a', maxTicksLimit: 8 },
+        },
+        y: {
+          grid: { color: '#1a2230' },
+          ticks: {
+            color: '#4a5a6a',
+            callback: v => v >= 1e6 ? (v/1e6).toFixed(1)+'M' : v >= 1e3 ? (v/1e3).toFixed(0)+'K' : v,
+          },
+          beginAtZero: true,
+        }
+      }
+    }
+  });
+}
+
+// Populate skills-levelled stat from template data
+const skillGains = {{ skill_gains | tojson }};
+const levelled   = skillGains.filter(s => s.levelled_up).length;
+document.getElementById('stat-skills-levelled') && (document.getElementById('stat-skills-levelled').textContent = levelled);
+
+// Initial chart load
+{% if snapshot_count >= 2 %}
+loadChart();
+{% endif %}
+</script>
+{% endblock %}

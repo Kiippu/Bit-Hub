@@ -1,0 +1,10 @@
+{
+  "id": "xp_tracker",
+  "name": "XP Tracker",
+  "description": "Track player experience gains over time. Compare empire members on shared charts.",
+  "icon": "📈",
+  "author": "BitCraft Hub",
+  "route_prefix": "/xp-tracker",
+  "tag": "XP",
+  "version": "1.0"
+}
