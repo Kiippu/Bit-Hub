@@ -4,225 +4,194 @@
 {% block head %}
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-.ep { font-family: 'Inter', sans-serif; }
+.ep { font-family:'Inter',sans-serif; }
+.flash-wrap { margin-bottom:18px; }
+.flash-msg { padding:11px 16px; border-radius:8px; font-size:13px; margin-bottom:7px; display:flex; align-items:center; gap:10px; }
+.flash-success { background:rgba(42,138,122,.15); border:1px solid var(--teal); color:var(--teal-light); }
+.flash-error   { background:rgba(212,98,26,.12);  border:1px solid var(--amber); color:#f09060; }
+.flash-info    { background:rgba(200,146,42,.1);  border:1px solid var(--gold-dim); color:var(--gold); }
 
-/* ── Flash messages ── */
-.flash-wrap { margin-bottom: 20px; }
-.flash-msg {
-  padding: 11px 16px; border-radius: 8px; font-size: 13px; margin-bottom: 8px;
-  display: flex; align-items: center; gap: 10px;
-}
-.flash-success { background: rgba(42,138,122,0.15); border: 1px solid var(--teal); color: var(--teal-light); }
-.flash-error   { background: rgba(212,98,26,0.12);  border: 1px solid var(--amber); color: #f09060; }
-.flash-info    { background: rgba(200,146,42,0.1);  border: 1px solid var(--gold-dim); color: var(--gold); }
+/* ── Search / buttons ── */
+.claim-search-wrap { display:flex; gap:10px; margin-bottom:22px; max-width:580px; flex-wrap:wrap; }
+.claim-search-wrap input { flex:1; min-width:200px; background:var(--bg-raised); border:1px solid var(--border); border-radius:8px; padding:11px 15px; color:var(--text-primary); font-family:'Inter',sans-serif; font-size:15px; outline:none; transition:border-color .2s; }
+.claim-search-wrap input:focus { border-color:var(--gold-dim); }
+.claim-search-wrap input::placeholder { color:var(--text-muted); }
+.ep-btn { padding:10px 20px; border-radius:7px; border:none; cursor:pointer; font-family:'Inter',sans-serif; font-size:13px; font-weight:600; transition:all .18s; white-space:nowrap; display:inline-flex; align-items:center; gap:6px; }
+.ep-btn-primary { background:var(--gold-dim); color:#fff; } .ep-btn-primary:hover { background:var(--gold); }
+.ep-btn-ghost   { background:var(--bg-raised); border:1px solid var(--border); color:var(--text-secondary); } .ep-btn-ghost:hover { border-color:var(--gold-dim); color:var(--gold); }
+.ep-btn-teal    { background:rgba(42,138,122,.18); border:1px solid var(--teal); color:var(--teal-light); } .ep-btn-teal:hover { background:rgba(42,138,122,.3); }
+.ep-btn-danger  { background:rgba(255,77,106,.1); border:1px solid #7a2222; color:#f06060; } .ep-btn-danger:hover { background:rgba(255,77,106,.2); }
+.ep-btn-purple  { background:rgba(155,89,245,.15); border:1px solid #5a2a9a; color:#b07af5; } .ep-btn-purple:hover { background:rgba(155,89,245,.25); }
+.ep-btn-sm      { padding:6px 12px; font-size:12px; }
 
-/* ── Claim search ── */
-.claim-search-wrap { display: flex; gap: 10px; margin-bottom: 28px; max-width: 560px; }
-.claim-search-wrap input {
-  flex: 1; background: var(--bg-raised); border: 1px solid var(--border);
-  border-radius: 8px; padding: 12px 16px; color: var(--text-primary);
-  font-family: 'Inter', sans-serif; font-size: 15px; outline: none; transition: border-color 0.2s;
-}
-.claim-search-wrap input:focus { border-color: var(--gold-dim); }
-.claim-search-wrap input::placeholder { color: var(--text-muted); }
 
 /* ── Identity bar ── */
-.identity-bar {
-  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-  background: var(--bg-raised); border: 1px solid var(--border); border-radius: 8px;
-  padding: 10px 16px; margin-bottom: 20px; font-size: 13px;
-}
-.identity-bar .who { color: var(--text-secondary); }
-.identity-bar .who strong { color: var(--text-primary); }
-.identity-bar .role-badge {
-  padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
-}
-.role-emperor { background: rgba(200,146,42,0.15); border: 1px solid var(--gold-dim); color: var(--gold); }
-.role-admin   { background: rgba(42,138,122,0.15); border: 1px solid var(--teal); color: var(--teal-light); }
-.role-member  { background: var(--bg-surface); border: 1px solid var(--border); color: var(--text-muted); }
-.identity-bar .spacer { flex: 1; }
+.identity-bar { display:flex; align-items:center; gap:12px; flex-wrap:wrap; background:var(--bg-raised); border:1px solid var(--border); border-radius:8px; padding:10px 15px; margin-bottom:18px; font-size:13px; }
+.role-badge { padding:2px 10px; border-radius:20px; font-size:11px; font-weight:600; }
+.role-emperor { background:rgba(200,146,42,.15); border:1px solid var(--gold-dim); color:var(--gold); }
+.role-admin   { background:rgba(42,138,122,.15); border:1px solid var(--teal); color:var(--teal-light); }
+.role-member  { background:var(--bg-surface); border:1px solid var(--border); color:var(--text-muted); }
 
-/* ── Auth box (verify identity) ── */
-.auth-box {
-  background: var(--bg-raised); border: 1px solid var(--border); border-radius: 10px;
-  padding: 20px 24px; margin-bottom: 20px;
-}
-.auth-box-title { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
-.auth-box-sub   { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5; }
-.auth-code-display {
-  background: var(--bg-deep); border: 1px solid var(--gold-dim); border-radius: 8px;
-  padding: 14px 20px; font-family: monospace; font-size: 22px; font-weight: 700;
-  color: var(--gold-light); letter-spacing: 0.2em; text-align: center; margin-bottom: 12px;
-}
-.auth-code-instruction {
-  background: var(--bg-surface); border: 1px solid var(--border); border-radius: 6px;
-  padding: 10px 14px; font-size: 12px; color: var(--text-secondary); margin-bottom: 14px; line-height: 1.6;
-}
-.auth-code-instruction code {
-  background: var(--bg-deep); border: 1px solid var(--border); border-radius: 3px;
-  padding: 1px 6px; color: var(--gold); font-size: 13px;
-}
-
-/* ── Buttons ── */
-.ep-btn {
-  padding: 10px 20px; border-radius: 7px; border: none; cursor: pointer;
-  font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600;
-  transition: all 0.18s; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px;
-}
-.ep-btn-primary  { background: var(--gold-dim); color: #fff; }
-.ep-btn-primary:hover  { background: var(--gold); }
-.ep-btn-ghost    { background: var(--bg-raised); border: 1px solid var(--border); color: var(--text-secondary); }
-.ep-btn-ghost:hover    { border-color: var(--gold-dim); color: var(--gold); }
-.ep-btn-teal     { background: rgba(42,138,122,0.18); border: 1px solid var(--teal); color: var(--teal-light); }
-.ep-btn-teal:hover     { background: rgba(42,138,122,0.3); }
-.ep-btn-danger   { background: rgba(255,77,106,0.1); border: 1px solid #7a2222; color: #f06060; }
-.ep-btn-danger:hover   { background: rgba(255,77,106,0.2); }
-.ep-btn-sm       { padding: 6px 14px; font-size: 12px; }
+/* ── Auth box ── */
+.auth-box { background:var(--bg-raised); border:1px solid var(--border); border-radius:10px; padding:20px 22px; margin-bottom:18px; }
+.auth-code-display { background:var(--bg-deep); border:1px solid var(--gold-dim); border-radius:8px; padding:14px 20px; font-family:monospace; font-size:24px; font-weight:700; color:var(--gold-light); letter-spacing:.2em; text-align:center; margin-bottom:12px; }
+.auth-code-instruction { background:var(--bg-surface); border:1px solid var(--border); border-radius:6px; padding:10px 14px; font-size:12px; color:var(--text-secondary); margin-bottom:14px; line-height:1.6; }
+.auth-code-instruction code { background:var(--bg-deep); border:1px solid var(--border); border-radius:3px; padding:1px 6px; color:var(--gold); font-size:13px; }
 
 /* ── Claim hero ── */
-.claim-hero {
-  background: var(--bg-raised); border: 1px solid var(--border); border-radius: 12px;
-  padding: 22px 26px; margin-bottom: 20px; position: relative; overflow: hidden;
-  animation: fadeUp 0.3s ease both;
-}
-.claim-hero::before {
-  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
-  background: linear-gradient(90deg, var(--gold-dim), var(--gold-light), var(--gold-dim));
-}
-.claim-hero-top { display: flex; align-items: flex-start; gap: 20px; flex-wrap: wrap; }
-.claim-hero-title { font-size: 22px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; }
-.claim-hero-meta  { display: flex; flex-wrap: wrap; gap: 7px; }
-.meta-chip {
-  background: var(--bg-surface); border: 1px solid var(--border); border-radius: 6px;
-  padding: 3px 10px; font-size: 12px; color: var(--text-secondary);
-}
-.meta-chip.gold { border-color: var(--gold-dim); color: var(--gold); }
-.meta-chip.teal { border-color: var(--teal); color: var(--teal-light); }
-.meta-chip.red  { border-color: #7a2222; color: #f06060; }
-.meta-chip.warn { border-color: #7a5500; color: #e0a030; }
-.claim-hero-stats { margin-left: auto; display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
-.hero-stat {
-  background: var(--bg-surface); border: 1px solid var(--border); border-radius: 10px;
-  padding: 11px 16px; text-align: center; min-width: 85px;
-}
-.hero-stat-val { font-size: 19px; font-weight: 700; color: var(--gold-light); letter-spacing: -0.3px; }
-.hero-stat-lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); margin-top: 2px; }
-
-/* Supply bar */
-.supply-bar-wrap { margin-top: 14px; }
-.supply-bar-row { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); margin-bottom: 5px; }
-.supply-bar-bg { background: var(--bg-deep); border-radius: 4px; height: 5px; overflow: hidden; }
-.supply-bar-fill { height: 100%; border-radius: 4px; }
-.supply-ok       .supply-bar-fill { background: linear-gradient(90deg, var(--teal), var(--teal-light)); }
-.supply-warning  .supply-bar-fill { background: linear-gradient(90deg, #7a5500, #e0a030); }
-.supply-critical .supply-bar-fill { background: linear-gradient(90deg, #7a0000, #f06060); }
+.claim-hero { background:var(--bg-raised); border:1px solid var(--border); border-radius:12px; padding:22px 26px; margin-bottom:18px; position:relative; overflow:hidden; animation:fadeUp .3s ease both; }
+.claim-hero::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg,var(--gold-dim),var(--gold-light),var(--gold-dim)); }
+.claim-hero-top { display:flex; align-items:flex-start; gap:20px; flex-wrap:wrap; }
+.claim-hero-title { font-size:22px; font-weight:700; color:var(--text-primary); margin-bottom:8px; }
+.claim-hero-meta  { display:flex; flex-wrap:wrap; gap:7px; }
+.meta-chip { background:var(--bg-surface); border:1px solid var(--border); border-radius:6px; padding:3px 10px; font-size:12px; color:var(--text-secondary); }
+.meta-chip.gold { border-color:var(--gold-dim); color:var(--gold); }
+.meta-chip.teal { border-color:var(--teal); color:var(--teal-light); }
+.meta-chip.red  { border-color:#7a2222; color:#f06060; }
+.meta-chip.warn { border-color:#7a5500; color:#e0a030; }
+.meta-chip.purple { border-color:#5a2a9a; color:#b07af5; }
+.claim-hero-stats { margin-left:auto; display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
+.hero-stat { background:var(--bg-surface); border:1px solid var(--border); border-radius:10px; padding:11px 15px; text-align:center; min-width:80px; }
+.hero-stat-val { font-size:18px; font-weight:700; color:var(--gold-light); letter-spacing:-.3px; }
+.hero-stat-lbl { font-size:10px; text-transform:uppercase; letter-spacing:.1em; color:var(--text-muted); margin-top:2px; }
+.supply-bar-wrap { margin-top:14px; }
+.supply-bar-row  { display:flex; justify-content:space-between; font-size:12px; color:var(--text-muted); margin-bottom:5px; }
+.supply-bar-bg   { background:var(--bg-deep); border-radius:4px; height:5px; overflow:hidden; }
+.supply-bar-fill { height:100%; border-radius:4px; }
+.supply-ok       .supply-bar-fill { background:linear-gradient(90deg,var(--teal),var(--teal-light)); }
+.supply-warning  .supply-bar-fill { background:linear-gradient(90deg,#7a5500,#e0a030); }
+.supply-critical .supply-bar-fill { background:linear-gradient(90deg,#7a0000,#f06060); }
 
 /* ── Tabs ── */
-.ep-tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--border); margin-bottom: 22px; }
-.ep-tab {
-  padding: 10px 18px; font-size: 13px; font-weight: 500; color: var(--text-muted); cursor: pointer;
-  border-bottom: 2px solid transparent; transition: all 0.18s;
-  background: none; border-top: none; border-left: none; border-right: none; margin-bottom: -1px;
-  font-family: 'Inter', sans-serif;
-}
-.ep-tab:hover { color: var(--text-primary); }
-.ep-tab.active { color: var(--gold-light); border-bottom-color: var(--gold); }
-.ep-tab-section { display: none; }
-.ep-tab-section.active { display: block; }
+.ep-tabs { display:flex; gap:2px; border-bottom:1px solid var(--border); margin-bottom:20px; overflow-x:auto; }
+.ep-tab { padding:9px 16px; font-size:13px; font-weight:500; color:var(--text-muted); cursor:pointer; border-bottom:2px solid transparent; transition:all .18s; background:none; border-top:none; border-left:none; border-right:none; margin-bottom:-1px; font-family:'Inter',sans-serif; white-space:nowrap; }
+.ep-tab:hover { color:var(--text-primary); }
+.ep-tab.active { color:var(--gold-light); border-bottom-color:var(--gold); }
+.ep-tab-section { display:none; }
+.ep-tab-section.active { display:block; }
 
 /* ── Cards ── */
-.ep-card {
-  background: var(--bg-raised); border: 1px solid var(--border); border-radius: 10px;
-  padding: 20px 22px; margin-bottom: 16px; animation: fadeUp 0.3s ease both;
-}
-.ep-card-title {
-  font-size: 11px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
-  color: var(--gold); margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
-}
-.ep-card-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.ep-card { background:var(--bg-raised); border:1px solid var(--border); border-radius:10px; padding:18px 20px; margin-bottom:14px; animation:fadeUp .3s ease both; }
+.ep-card-title { font-size:11px; font-weight:600; letter-spacing:.15em; text-transform:uppercase; color:var(--gold); margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+.ep-card-title::after { content:''; flex:1; height:1px; background:var(--border); }
+.ep-grid { display:grid; grid-template-columns:1fr 300px; gap:16px; align-items:start; }
+@media(max-width:860px){.ep-grid{grid-template-columns:1fr;}}
 
-/* ── Two-col layout ── */
-.ep-grid { display: grid; grid-template-columns: 1fr 320px; gap: 18px; align-items: start; }
-@media (max-width: 860px) { .ep-grid { grid-template-columns: 1fr; } }
+/* ── Progress ── */
+.progress-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+@media(max-width:600px){.progress-grid{grid-template-columns:1fr;}}
+.progress-card { background:var(--bg-surface); border:1px solid var(--border); border-radius:8px; padding:13px 15px; }
+.progress-card-title { font-size:11px; font-weight:600; letter-spacing:.05em; color:var(--text-secondary); margin-bottom:5px; }
+.progress-card-val   { font-size:20px; font-weight:700; color:var(--text-primary); letter-spacing:-.3px; }
+.progress-card-sub   { font-size:11px; color:var(--text-muted); margin-top:2px; }
+.mini-bar { background:var(--bg-deep); border-radius:3px; height:4px; margin-top:7px; overflow:hidden; }
+.mini-bar-fill      { height:100%; border-radius:3px; background:linear-gradient(90deg,var(--gold-dim),var(--gold)); }
+.mini-bar-fill.teal { background:linear-gradient(90deg,var(--teal),var(--teal-light)); }
 
-/* ── Progress cards ── */
-.progress-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-@media (max-width: 600px) { .progress-grid { grid-template-columns: 1fr; } }
-.progress-card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
-.progress-card-title { font-size: 11px; font-weight: 600; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: 6px; }
-.progress-card-val   { font-size: 21px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.3px; }
-.progress-card-sub   { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-.mini-bar { background: var(--bg-deep); border-radius: 3px; height: 4px; margin-top: 8px; overflow: hidden; }
-.mini-bar-fill      { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--gold-dim), var(--gold)); }
-.mini-bar-fill.teal { background: linear-gradient(90deg, var(--teal), var(--teal-light)); }
-
-/* ── Goals form ── */
-.goal-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
-.goal-label { font-size: 13px; color: var(--text-secondary); min-width: 150px; flex-shrink: 0; }
-.goal-input, .goal-select {
-  background: var(--bg-surface); border: 1px solid var(--border); border-radius: 6px;
-  padding: 8px 12px; color: var(--text-primary); font-family: 'Inter', sans-serif; font-size: 13px;
-  outline: none; transition: border-color 0.2s;
-}
-.goal-input  { flex: 1; min-width: 80px; max-width: 180px; }
-.goal-select { flex: 1; min-width: 140px; max-width: 220px; cursor: pointer; }
-.goal-input:focus, .goal-select:focus { border-color: var(--gold-dim); }
-.goal-current { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
-.goal-hint { font-size: 11px; color: var(--text-muted); width: 100%; padding-left: 160px; margin-top: -6px; }
-
-/* ── Custom goals ── */
-.custom-goal-item {
-  display: flex; align-items: center; gap: 10px; background: var(--bg-surface);
-  border: 1px solid var(--border); border-radius: 7px; padding: 9px 12px; margin-bottom: 7px;
-}
-.custom-goal-item span { flex: 1; font-size: 13px; color: var(--text-secondary); }
-.custom-goal-item .by  { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
-.custom-goal-del { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 18px; line-height: 1; padding: 0 2px; }
-.custom-goal-del:hover { color: #f06060; }
-.custom-goal-add { display: flex; gap: 8px; margin-top: 6px; }
+/* ── Rotating stats widget ── */
+.stats-rotator { position:relative; height:100%; min-height:220px; }
+.stat-slide { position:absolute; inset:0; opacity:0; transition:opacity .6s ease; pointer-events:none; }
+.stat-slide.active { opacity:1; pointer-events:auto; }
+.rotator-timer { width:100%; height:3px; background:var(--bg-deep); border-radius:2px; margin-top:12px; overflow:hidden; }
+.rotator-timer-fill { height:100%; background:var(--gold-dim); border-radius:2px; transition:width 20s linear; }
 
 /* ── Member table ── */
-.member-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.member-table th {
-  font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-muted);
-  padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border); font-weight: 500;
-}
-.member-table td { padding: 9px 10px; border-bottom: 1px solid rgba(42,58,80,0.4); vertical-align: middle; }
-.member-table tr:last-child td { border-bottom: none; }
-.member-table tr:hover td { background: var(--bg-hover); }
-.member-name { font-weight: 500; color: var(--text-primary); }
+.member-filters { display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; align-items:center; }
+.filter-select { background:var(--bg-surface); border:1px solid var(--border); border-radius:6px; padding:7px 12px; color:var(--text-primary); font-family:'Inter',sans-serif; font-size:13px; outline:none; cursor:pointer; }
+.filter-input  { background:var(--bg-surface); border:1px solid var(--border); border-radius:6px; padding:7px 12px; color:var(--text-primary); font-family:'Inter',sans-serif; font-size:13px; outline:none; flex:1; min-width:140px; max-width:220px; }
+.filter-input:focus, .filter-select:focus { border-color:var(--gold-dim); }
+.member-table { width:100%; border-collapse:collapse; font-size:13px; }
+.member-table th { font-size:10px; letter-spacing:.15em; text-transform:uppercase; color:var(--text-muted); padding:8px 10px; text-align:left; border-bottom:1px solid var(--border); font-weight:500; }
+.member-table td { padding:8px 10px; border-bottom:1px solid rgba(42,58,80,.4); vertical-align:middle; }
+.member-table tr:last-child td { border-bottom:none; }
+.member-table tr:hover td { background:var(--bg-hover); }
+.member-name { font-weight:500; color:var(--text-primary); }
+.skill-badge { display:inline-block; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:600; min-width:28px; text-align:center; }
+.skill-met   { background:rgba(42,138,122,.2); color:var(--teal-light); border:1px solid var(--teal); }
+.skill-close { background:rgba(200,146,42,.15); color:var(--gold); border:1px solid var(--gold-dim); }
+.skill-low   { background:rgba(255,77,106,.1); color:#f06060; border:1px solid #7a2222; }
+.skill-none  { background:var(--bg-surface); color:var(--text-muted); border:1px solid var(--border); }
 
-.skill-badge {
-  display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px;
-  font-weight: 600; min-width: 32px; text-align: center;
-}
-.skill-met   { background: rgba(42,138,122,0.2); color: var(--teal-light); border: 1px solid var(--teal); }
-.skill-close { background: rgba(200,146,42,0.15); color: var(--gold); border: 1px solid var(--gold-dim); }
-.skill-low   { background: rgba(255,77,106,0.1); color: #f06060; border: 1px solid #7a2222; }
-.skill-none  { background: var(--bg-surface); color: var(--text-muted); border: 1px solid var(--border); }
+/* ── Minimap ── */
+.minimap-wrap { background:var(--bg-deep); border:1px solid var(--border); border-radius:8px; overflow:hidden; position:relative; }
+#claim-minimap { display:block; width:100%; cursor:crosshair; }
+.minimap-legend { display:flex; flex-wrap:wrap; gap:10px; padding:10px 14px; font-size:11px; color:var(--text-muted); border-top:1px solid var(--border); }
+.legend-dot { width:10px; height:10px; border-radius:2px; display:inline-block; margin-right:4px; vertical-align:middle; }
+
+/* ── Inventory ── */
+.inv-filters { display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
+.inv-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:12px; }
+.inv-card { background:var(--bg-raised); border:1px solid var(--border); border-radius:10px; overflow:hidden; transition:border-color .18s; cursor:pointer; }
+.inv-card:hover { border-color:var(--border-glow); }
+.inv-card.active { border-color:var(--gold-dim); }
+.inv-card-header { padding:12px 16px; display:flex; align-items:center; gap:10px; border-bottom:1px solid var(--border); }
+.inv-card-icon { font-size:22px; }
+.inv-card-name { font-weight:600; font-size:14px; color:var(--text-primary); }
+.inv-card-nick { font-size:11px; color:var(--text-muted); margin-top:1px; }
+.inv-card-coords { font-size:11px; color:var(--text-muted); margin-left:auto; font-family:monospace; }
+.inv-card-stats { display:flex; gap:12px; padding:8px 16px 10px; font-size:12px; color:var(--text-muted); }
+.inv-detail { display:none; padding:12px 16px; border-top:1px solid var(--border); background:var(--bg-surface); }
+.inv-detail.show { display:block; }
+.inv-item-row { display:flex; align-items:center; gap:8px; padding:5px 0; border-bottom:1px solid rgba(42,58,80,.3); font-size:12px; }
+.inv-item-row:last-child { border-bottom:none; }
+.inv-item-name { flex:1; color:var(--text-primary); font-weight:500; }
+.inv-item-qty  { color:var(--gold); font-weight:600; font-family:monospace; }
+
+/* Rarity colours */
+.rarity-common    { color:#9ca3af; }
+.rarity-uncommon  { color:#4ade80; }
+.rarity-rare      { color:#60a5fa; }
+.rarity-epic      { color:#c084fc; }
+.rarity-legendary { color:#fbbf24; }
+.rarity-mythic    { color:#f87171; }
+.rarity-badge { display:inline-block; padding:1px 6px; border-radius:3px; font-size:10px; font-weight:600; letter-spacing:.05em; }
+.rarity-badge.Common    { background:rgba(156,163,175,.15); color:#9ca3af; border:1px solid #4b5563; }
+.rarity-badge.Uncommon  { background:rgba(74,222,128,.12);  color:#4ade80; border:1px solid #166534; }
+.rarity-badge.Rare      { background:rgba(96,165,250,.12);  color:#60a5fa; border:1px solid #1e40af; }
+.rarity-badge.Epic      { background:rgba(192,132,252,.12); color:#c084fc; border:1px solid #6b21a8; }
+.rarity-badge.Legendary { background:rgba(251,191,36,.12);  color:#fbbf24; border:1px solid #92400e; }
+.rarity-badge.Mythic    { background:rgba(248,113,113,.12); color:#f87171; border:1px solid #991b1b; }
+
+/* ── Goals form ── */
+.goal-row { display:flex; align-items:center; gap:10px; margin-bottom:11px; flex-wrap:wrap; }
+.goal-label { font-size:13px; color:var(--text-secondary); min-width:150px; flex-shrink:0; }
+.goal-input  { background:var(--bg-surface); border:1px solid var(--border); border-radius:6px; padding:7px 12px; color:var(--text-primary); font-family:'Inter',sans-serif; font-size:13px; outline:none; transition:border-color .2s; flex:1; min-width:80px; max-width:180px; }
+.goal-select { background:var(--bg-surface); border:1px solid var(--border); border-radius:6px; padding:7px 12px; color:var(--text-primary); font-family:'Inter',sans-serif; font-size:13px; outline:none; cursor:pointer; flex:1; min-width:140px; max-width:220px; }
+.goal-input:focus,.goal-select:focus { border-color:var(--gold-dim); }
+.goal-current { font-size:12px; color:var(--text-muted); white-space:nowrap; }
+.goal-hint    { font-size:11px; color:var(--text-muted); width:100%; padding-left:160px; margin-top:-5px; }
+.custom-goal-item { display:flex; align-items:center; gap:10px; background:var(--bg-surface); border:1px solid var(--border); border-radius:7px; padding:8px 12px; margin-bottom:7px; }
+.custom-goal-item span { flex:1; font-size:13px; color:var(--text-secondary); }
+.custom-goal-del { background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:18px; line-height:1; } .custom-goal-del:hover { color:#f06060; }
+.custom-goal-add { display:flex; gap:8px; margin-top:6px; }
 
 /* ── Admin panel ── */
-.admin-row {
-  display: flex; align-items: center; gap: 12px; padding: 10px 0;
-  border-bottom: 1px solid rgba(42,58,80,0.4); font-size: 13px;
-}
-.admin-row:last-child { border-bottom: none; }
-.admin-name { flex: 1; font-weight: 500; color: var(--text-primary); }
-.admin-by   { font-size: 11px; color: var(--text-muted); }
+.admin-row { display:flex; align-items:center; gap:12px; padding:9px 0; border-bottom:1px solid rgba(42,58,80,.4); font-size:13px; }
+.admin-row:last-child { border-bottom:none; }
+.admin-name { flex:1; font-weight:500; color:var(--text-primary); }
+.admin-by   { font-size:11px; color:var(--text-muted); }
 
-/* ── Hint / empty state ── */
-.ep-hint {
-  background: var(--bg-raised); border: 1px dashed var(--border); border-radius: 12px;
-  padding: 54px 40px; text-align: center; color: var(--text-muted); font-family: 'Inter', sans-serif;
-}
-.ep-hint-icon  { font-size: 44px; margin-bottom: 14px; opacity: 0.5; }
-.ep-hint-title { font-size: 17px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; }
-.ep-hint-sub   { font-size: 13px; line-height: 1.7; }
+/* ── Empty / hint ── */
+.ep-hint { background:var(--bg-raised); border:1px dashed var(--border); border-radius:12px; padding:50px 38px; text-align:center; color:var(--text-muted); font-family:'Inter',sans-serif; }
+.ep-hint-icon  { font-size:42px; margin-bottom:12px; opacity:.5; }
+.ep-hint-title { font-size:17px; font-weight:600; color:var(--text-secondary); margin-bottom:8px; }
+.ep-hint-sub   { font-size:13px; line-height:1.7; }
+.error-box { background:rgba(212,98,26,.1); border:1px solid var(--amber); color:#f09060; border-radius:8px; padding:12px 16px; font-size:14px; margin-bottom:18px; }
 
-.error-box {
-  background: rgba(212,98,26,0.1); border: 1px solid var(--amber); color: #f09060;
-  border-radius: 8px; padding: 12px 16px; font-size: 14px; margin-bottom: 20px;
-}
+/* ── Claim search autocomplete ── */
+.claim-suggestions { position:absolute; top:100%; left:0; right:0; z-index:200; background:var(--bg-raised); border:1px solid var(--gold-dim); border-top:none; border-radius:0 0 8px 8px; max-height:260px; overflow-y:auto; box-shadow:0 8px 24px rgba(0,0,0,.4); }
+.claim-sugg { padding:9px 14px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; gap:10px; font-size:13px; border-bottom:1px solid rgba(42,58,80,.4); }
+.claim-sugg:last-child { border-bottom:none; }
+.claim-sugg:hover { background:rgba(200,146,42,.08); }
+.claim-sugg-name { color:var(--text-primary); font-weight:500; }
+.claim-sugg-meta { color:var(--text-muted); font-size:11px; white-space:nowrap; }
+
+/* ── Sortable column headers ── */
+.sortable-th { cursor:pointer; user-select:none; }
+.sortable-th:hover { color:var(--gold) !important; }
+.sort-ind { font-size:9px; opacity:.7; margin-left:2px; display:inline-block; min-width:8px; }
+.member-table th.sk-th { font-size:10px; padding:7px 7px; white-space:nowrap; }
+.member-table td.sk-td { padding:5px 7px; text-align:center; font-size:12px; }
 </style>
 {% endblock %}
 
@@ -231,11 +200,10 @@
 {% block content %}
 <div class="ep">
 
-<!-- ── Flash messages ── -->
 {% with messages = get_flashed_messages(with_categories=true) %}
 {% if messages %}
 <div class="flash-wrap">
-  {% for cat, msg in messages %}
+  {% for cat,msg in messages %}
   <div class="flash-msg flash-{{ cat }}">{{ msg }}</div>
   {% endfor %}
 </div>
@@ -243,38 +211,42 @@
 {% endwith %}
 
 <!-- ── Claim search ── -->
-<form method="GET" action="/empire/">
+<form method="GET" action="/empire/" id="claim-form" onsubmit="return claimFormSubmit()">
   <div class="claim-search-wrap">
-    <input type="text" name="claim_id" placeholder="Enter Claim Entity ID…"
-           value="{{ claim_id }}" autocomplete="off"/>
+    <div style="flex:1;position:relative;min-width:200px">
+      <input type="text" id="claim-search-input"
+             placeholder="Claim ID or empire name…"
+             value="{{ claim.name if claim else claim_id }}"
+             autocomplete="off"
+             oninput="claimSearchDebounce()"
+             onfocus="claimSearchDebounce()"
+             onblur="setTimeout(hideSuggestions,200)"
+             style="width:100%;background:var(--bg-raised);border:1px solid var(--border);border-radius:8px;padding:11px 15px;color:var(--text-primary);font-family:'Inter',sans-serif;font-size:15px;outline:none;transition:border-color .2s;box-sizing:border-box"/>
+      <input type="hidden" name="claim_id" id="claim-id-hidden" value="{{ claim_id }}"/>
+      <div id="claim-suggestions" class="claim-suggestions" style="display:none"></div>
+    </div>
     <button type="submit" class="ep-btn ep-btn-primary">Load Claim</button>
   </div>
 </form>
 
-{% if error %}
-<div class="error-box">⚠ {{ error }}</div>
-{% endif %}
+{% if error %}<div class="error-box">⚠ {{ error }}</div>{% endif %}
 
-<!-- ── Identity bar (always shown when a claim is loaded) ── -->
+<!-- ── Identity bar ── -->
 {% if claim_id and claim %}
 <div class="identity-bar">
   {% if user %}
-    <span class="who">Signed in as <strong>{{ user.username }}</strong></span>
-    {% if emperor %}
-      <span class="role-badge role-emperor">⚔ Emperor</span>
-    {% elif authorised %}
-      <span class="role-badge role-admin">★ Admin</span>
-    {% else %}
-      <span class="role-badge role-member">Member (view-only)</span>
-    {% endif %}
-    <span class="spacer"></span>
+    <span style="color:var(--text-secondary)">Signed in as <strong style="color:var(--text-primary)">{{ user.username }}</strong></span>
+    {% if emperor %}<span class="role-badge role-emperor">⚔ Emperor</span>
+    {% elif authorised %}<span class="role-badge role-admin">★ Admin</span>
+    {% else %}<span class="role-badge role-member">Member</span>{% endif %}
+    <span style="flex:1"></span>
     <form method="POST" action="/empire/auth/logout" style="margin:0">
       <input type="hidden" name="claim_id" value="{{ claim_id }}">
       <button type="submit" class="ep-btn ep-btn-ghost ep-btn-sm">Sign out</button>
     </form>
   {% else %}
-    <span class="who" style="color:var(--text-muted)">Not verified — viewing in read-only mode</span>
-    <span class="spacer"></span>
+    <span style="color:var(--text-muted);font-size:13px">Not verified — read-only mode</span>
+    <span style="flex:1"></span>
     <form method="POST" action="/empire/auth/start" style="margin:0">
       <input type="hidden" name="claim_id" value="{{ claim_id }}">
       <button type="submit" class="ep-btn ep-btn-teal ep-btn-sm">🔑 Verify Identity</button>
@@ -283,19 +255,13 @@
 </div>
 {% endif %}
 
-<!-- ── Auth verify box (shown after code is generated) ── -->
+<!-- ── Auth verify box ── -->
 {% if pending_code %}
 <div class="auth-box">
-  <div class="auth-box-title">🔑 Verify your in-game identity</div>
-  <div class="auth-box-sub">
-    Post the code below in <strong>in-game chat channel 2</strong>, then click Confirm.
-    The code expires in <strong>10 minutes</strong>.
-  </div>
+  <div style="font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:4px">🔑 Verify your in-game identity</div>
+  <div style="font-size:13px;color:var(--text-muted);margin-bottom:14px">Post this code in <strong>chat channel 2</strong>, then click Confirm. Expires in 10 minutes.</div>
   <div class="auth-code-display">bitjita:auth:{{ pending_code }}</div>
-  <div class="auth-code-instruction">
-    Open BitCraft → press Enter to open chat → make sure you're in <strong>Channel 2</strong>
-    → type exactly: <code>bitjita:auth:{{ pending_code }}</code> → press Enter → come back here.
-  </div>
+  <div class="auth-code-instruction">In BitCraft → Enter → Channel 2 → type <code>bitjita:auth:{{ pending_code }}</code> → Enter → come back here.</div>
   <form method="POST" action="/empire/auth/verify" style="display:flex;gap:10px;flex-wrap:wrap">
     <input type="hidden" name="claim_id" value="{{ claim_id }}">
     <input type="hidden" name="code" value="{{ pending_code }}">
@@ -305,29 +271,23 @@
 </div>
 {% endif %}
 
-<!-- ════════════════════════════════════════════════════════════════════
-     EMPTY STATE
-     ════════════════════════════════════════════════════════════════════ -->
+<!-- ══ EMPTY STATE ══ -->
 {% if not claim and not error %}
 <div class="ep-hint">
   <div class="ep-hint-icon">⚔</div>
   <div class="ep-hint-title">Empire Planner</div>
-  <div class="ep-hint-sub">
-    Enter your Claim Entity ID above to load your empire's live data and goals.<br>
-    Find it on <a href="https://bitjita.com/claims" target="_blank" style="color:var(--gold)">bitjita.com/claims</a> — it's the long number in the URL.<br><br>
-    <span style="color:var(--gold-dim)">Example: 576460752317569190</span>
-  </div>
+  <div class="ep-hint-sub">Enter your Claim Entity ID to load your empire's live data.<br>Find it at <a href="https://bitjita.com/claims" target="_blank" style="color:var(--gold)">bitjita.com/claims</a> — it's the long number in the claim URL.</div>
 </div>
 {% endif %}
 
 {% if claim %}
-{% set tier           = claim.tier | int %}
-{% set supplies       = claim.supplies | float %}
-{% set upkeep         = claim.upkeepCost | float %}
-{% set treasury       = claim.treasury | float %}
-{% set tiles          = claim.numTiles | int %}
-{% set member_count   = citizens | length %}
-{% set custom_goals   = goals.get('custom_goals', []) %}
+{% set tier         = claim.tier|int %}
+{% set supplies     = claim.supplies|float %}
+{% set upkeep       = claim.upkeepCost|float %}
+{% set treasury     = claim.treasury|float %}
+{% set tiles        = claim.numTiles|int %}
+{% set member_count = citizens|length %}
+{% set custom_goals = goals.get('custom_goals',[]) %}
 
 <!-- ── Claim hero ── -->
 <div class="claim-hero">
@@ -337,608 +297,739 @@
       <div class="claim-hero-meta">
         <span class="meta-chip gold">Tier {{ tier }}</span>
         <span class="meta-chip">{{ claim.regionName }}</span>
-        <span class="meta-chip">{{ tiles | format_int }} tiles</span>
-        {% if claim.ownerPlayerUsername %}
-        <span class="meta-chip">👑 {{ claim.ownerPlayerUsername }}</span>
-        {% endif %}
-        {% if supply_status == 'critical' %}
-          <span class="meta-chip red">🔴 {{ supply_days | round(1) }}d supplies</span>
-        {% elif supply_status == 'warning' %}
-          <span class="meta-chip warn">⚠ {{ supply_days | round(1) }}d supplies</span>
-        {% elif supply_days is not none %}
-          <span class="meta-chip teal">✓ {{ supply_days | round(0) | int }}d supplies</span>
-        {% endif %}
+        <span class="meta-chip">{{ tiles|format_int }} tiles</span>
+        {% if claim.ownerPlayerUsername %}<span class="meta-chip">👑 {{ claim.ownerPlayerUsername }}</span>{% endif %}
+        {% if supply_status=='critical' %}<span class="meta-chip red">🔴 {{ supply_days|round(1) }}d supplies</span>
+        {% elif supply_status=='warning' %}<span class="meta-chip warn">⚠ {{ supply_days|round(1) }}d supplies</span>
+        {% elif supply_days is not none %}<span class="meta-chip teal">✓ {{ supply_days|round(0)|int }}d supplies</span>{% endif %}
       </div>
     </div>
     <div class="claim-hero-stats">
       <div class="hero-stat"><div class="hero-stat-val">{{ member_count }}</div><div class="hero-stat-lbl">Members</div></div>
-      <div class="hero-stat">
-        <div class="hero-stat-val">{% if treasury >= 1000000 %}{{ "%.1fM"|format(treasury/1000000) }}{% elif treasury >= 1000 %}{{ "%.0fK"|format(treasury/1000) }}{% else %}{{ treasury|int }}{% endif %}</div>
-        <div class="hero-stat-lbl">Treasury</div>
-      </div>
+      <div class="hero-stat"><div class="hero-stat-val">{% if treasury>=1000000 %}{{ "%.1fM"|format(treasury/1000000) }}{% elif treasury>=1000 %}{{ "%.0fK"|format(treasury/1000) }}{% else %}{{ treasury|int }}{% endif %}</div><div class="hero-stat-lbl">Treasury</div></div>
       <div class="hero-stat"><div class="hero-stat-val">{{ upkeep|round(0)|int }}</div><div class="hero-stat-lbl">Upkeep/day</div></div>
       <div class="hero-stat"><div class="hero-stat-val">T{{ tier }}</div><div class="hero-stat-lbl">Tier</div></div>
     </div>
   </div>
-  {% if supply_days is not none and upkeep > 0 %}
-  {% set spct = [[(supplies / (upkeep * 30)) * 100, 0]|max, 100]|min %}
+  {% if supply_days is not none and upkeep>0 %}
+  {% set spct=[[(supplies/(upkeep*30))*100,0]|max,100]|min %}
   <div class="supply-bar-wrap supply-{{ supply_status }}">
-    <div class="supply-bar-row">
-      <span>Supplies: {{ supplies|int|format_int }}</span>
-      <span>{{ supply_days|round(1) }} days at {{ upkeep|round(1) }}/day</span>
-    </div>
+    <div class="supply-bar-row"><span>Supplies: {{ supplies|int|format_int }}</span><span>{{ supply_days|round(1) }} days at {{ upkeep|round(1) }}/day</span></div>
     <div class="supply-bar-bg"><div class="supply-bar-fill" style="width:{{ spct }}%"></div></div>
   </div>
   {% endif %}
 </div>
 
 <!-- ── Tabs ── -->
-{% set tab_id = request.args.get('_tab', 'overview') %}
 <div class="ep-tabs" id="ep-tabs">
   <button class="ep-tab" data-tab="overview"  onclick="epTab('overview',this)">📊 Overview</button>
-  <button class="ep-tab" data-tab="goals"     onclick="epTab('goals',this)">🎯 Goals{% if not authorised %} 🔒{% endif %}</button>
+  {% if authorised %}<button class="ep-tab" data-tab="goals" onclick="epTab('goals',this)">🎯 Goals</button>{% endif %}
   <button class="ep-tab" data-tab="members"   onclick="epTab('members',this)">👥 Members ({{ member_count }})</button>
-  {% if emperor %}
-  <button class="ep-tab" data-tab="admin"     onclick="epTab('admin',this)">⚙ Admin Access</button>
-  {% endif %}
+  <button class="ep-tab" data-tab="inventory" onclick="epTab('inventory',this)">📦 Inventory</button>
+  {% if emperor %}<button class="ep-tab" data-tab="admin" onclick="epTab('admin',this)">⚙ Admin</button>{% endif %}
 </div>
 
-<!-- ════════════════════════════════════════════════════════════════════
-     TAB: OVERVIEW
-     ════════════════════════════════════════════════════════════════════ -->
+<!-- ══ TAB: OVERVIEW ══ -->
 <div class="ep-tab-section" id="tab-overview">
 <div class="ep-grid">
 <div>
-
-  <!-- Active goals summary (from DB) -->
-  {% set has_goals = goals.tier_target or goals.treasury_target or goals.supplies_target or goals.tiles_target or goals.member_target or custom_goals %}
+  <!-- Goals summary -->
+  {% set has_goals=goals.tier_target or goals.treasury_target or goals.supplies_target or goals.tiles_target or goals.member_target or custom_goals %}
   {% if has_goals or goals.target_skill_id %}
-  <div class="ep-card" style="animation-delay:0.05s">
-    <div class="ep-card-title">🎯 Current Goals
-      {% if goals.updated_by %}
-      <span style="font-size:10px;font-weight:400;color:var(--text-muted);letter-spacing:0;text-transform:none">set by {{ goals.updated_by }}</span>
-      {% endif %}
-    </div>
+  <div class="ep-card" style="animation-delay:.05s">
+    <div class="ep-card-title">🎯 Current Goals{% if goals.updated_by %}<span style="font-size:10px;font-weight:400;color:var(--text-muted);letter-spacing:0;text-transform:none">by {{ goals.updated_by }}</span>{% endif %}</div>
     <div class="progress-grid">
-      {% if goals.tier_target %}
-      {% set tgt = goals.tier_target|int %}
-      <div class="progress-card">
-        <div class="progress-card-title">Claim Tier</div>
-        <div class="progress-card-val">T{{ tier }} → T{{ tgt }}</div>
-        <div class="progress-card-sub">{{ [tgt-tier,0]|max }} tier{{ 's' if tgt-tier!=1 else '' }} to go</div>
-        <div class="mini-bar"><div class="mini-bar-fill" style="width:{{ [(tier/tgt*100),100]|min }}%"></div></div>
-      </div>
-      {% endif %}
-      {% if goals.treasury_target %}
-      {% set tgt = goals.treasury_target|float %}
-      {% set pct = [(treasury/tgt*100),100]|min %}
-      <div class="progress-card">
-        <div class="progress-card-title">Treasury</div>
-        <div class="progress-card-val">{% if treasury>=1000 %}{{ "%.0fK"|format(treasury/1000) }}{% else %}{{ treasury|int }}{% endif %} / {% if tgt>=1000 %}{{ "%.0fK"|format(tgt/1000) }}{% else %}{{ tgt|int }}{% endif %}</div>
-        <div class="progress-card-sub">{{ pct|round(0)|int }}% reached</div>
-        <div class="mini-bar"><div class="mini-bar-fill teal" style="width:{{ pct }}%"></div></div>
-      </div>
-      {% endif %}
-      {% if goals.supplies_target %}
-      {% set tgt = goals.supplies_target|float %}
-      {% set pct = [(supplies/tgt*100),100]|min %}
-      <div class="progress-card">
-        <div class="progress-card-title">Supplies</div>
-        <div class="progress-card-val">{{ supplies|int|format_int }} / {{ tgt|int|format_int }}</div>
-        <div class="progress-card-sub">{{ pct|round(0)|int }}% stockpiled</div>
-        <div class="mini-bar"><div class="mini-bar-fill" style="width:{{ pct }}%"></div></div>
-      </div>
-      {% endif %}
-      {% if goals.tiles_target %}
-      {% set tgt = goals.tiles_target|int %}
-      {% set pct = [(tiles/tgt*100),100]|min %}
-      <div class="progress-card">
-        <div class="progress-card-title">Territory Tiles</div>
-        <div class="progress-card-val">{{ tiles|format_int }} / {{ tgt|format_int }}</div>
-        <div class="progress-card-sub">{{ pct|round(0)|int }}% of tile goal</div>
-        <div class="mini-bar"><div class="mini-bar-fill teal" style="width:{{ pct }}%"></div></div>
-      </div>
-      {% endif %}
-      {% if goals.member_target %}
-      {% set tgt = goals.member_target|int %}
-      {% set pct = [(member_count/tgt*100),100]|min %}
-      <div class="progress-card">
-        <div class="progress-card-title">Members</div>
-        <div class="progress-card-val">{{ member_count }} / {{ tgt }}</div>
-        <div class="progress-card-sub">{{ pct|round(0)|int }}% recruited</div>
-        <div class="mini-bar"><div class="mini-bar-fill teal" style="width:{{ pct }}%"></div></div>
-      </div>
-      {% endif %}
+      {% if goals.tier_target %}{% set tgt=goals.tier_target|int %}
+      <div class="progress-card"><div class="progress-card-title">Claim Tier</div><div class="progress-card-val">T{{ tier }} → T{{ tgt }}</div><div class="progress-card-sub">{{ [tgt-tier,0]|max }} to go</div><div class="mini-bar"><div class="mini-bar-fill" style="width:{{ [(tier/tgt*100),100]|min }}%"></div></div></div>{% endif %}
+      {% if goals.treasury_target %}{% set tgt=goals.treasury_target|float %}{% set pct=[(treasury/tgt*100),100]|min %}
+      <div class="progress-card"><div class="progress-card-title">Treasury</div><div class="progress-card-val">{% if treasury>=1000 %}{{ "%.0fK"|format(treasury/1000) }}{% else %}{{ treasury|int }}{% endif %}/{% if tgt>=1000 %}{{ "%.0fK"|format(tgt/1000) }}{% else %}{{ tgt|int }}{% endif %}</div><div class="progress-card-sub">{{ pct|round(0)|int }}% reached</div><div class="mini-bar"><div class="mini-bar-fill teal" style="width:{{ pct }}%"></div></div></div>{% endif %}
+      {% if goals.supplies_target %}{% set tgt=goals.supplies_target|float %}{% set pct=[(supplies/tgt*100),100]|min %}
+      <div class="progress-card"><div class="progress-card-title">Supplies</div><div class="progress-card-val">{{ supplies|int|format_int }}/{{ tgt|int|format_int }}</div><div class="progress-card-sub">{{ pct|round(0)|int }}%</div><div class="mini-bar"><div class="mini-bar-fill" style="width:{{ pct }}%"></div></div></div>{% endif %}
+      {% if goals.tiles_target %}{% set tgt=goals.tiles_target|int %}{% set pct=[(tiles/tgt*100),100]|min %}
+      <div class="progress-card"><div class="progress-card-title">Tiles</div><div class="progress-card-val">{{ tiles|format_int }}/{{ tgt|format_int }}</div><div class="mini-bar"><div class="mini-bar-fill teal" style="width:{{ pct }}%"></div></div></div>{% endif %}
+      {% if goals.member_target %}{% set tgt=goals.member_target|int %}{% set pct=[(member_count/tgt*100),100]|min %}
+      <div class="progress-card"><div class="progress-card-title">Members</div><div class="progress-card-val">{{ member_count }}/{{ tgt }}</div><div class="mini-bar"><div class="mini-bar-fill teal" style="width:{{ pct }}%"></div></div></div>{% endif %}
     </div>
     {% if custom_goals %}
-    <div style="margin-top:16px">
-      <div style="font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px">Custom Goals</div>
+    <div style="margin-top:14px">
+      <div style="font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:9px">Custom Goals</div>
       {% for g in custom_goals %}
-      <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg-surface);border:1px solid var(--border);border-radius:6px;margin-bottom:6px;font-size:13px;color:var(--text-secondary)">
-        <span style="color:var(--gold)">◆</span>{{ g.text }}
-        <span style="margin-left:auto;font-size:11px;color:var(--text-muted)">{{ g.created_by }}</span>
-      </div>
-      {% endfor %}
-    </div>
-    {% endif %}
+      <div style="display:flex;align-items:center;gap:10px;padding:7px 12px;background:var(--bg-surface);border:1px solid var(--border);border-radius:6px;margin-bottom:5px;font-size:13px;color:var(--text-secondary)">
+        <span style="color:var(--gold)">◆</span>{{ g.text }}<span style="margin-left:auto;font-size:11px;color:var(--text-muted)">{{ g.created_by }}</span>
+      </div>{% endfor %}
+    </div>{% endif %}
   </div>
   {% else %}
-  <div class="ep-card" style="border-style:dashed;animation-delay:0.05s">
+  <div class="ep-card" style="border-style:dashed;animation-delay:.05s">
     <div style="text-align:center;padding:12px;color:var(--text-muted);font-size:13px">
-      No goals set yet.
-      {% if authorised %}Head to the <strong style="color:var(--gold)">Goals</strong> tab to set targets.
-      {% else %}The empire emperor or an admin needs to verify and set goals.{% endif %}
+      No goals set. {% if authorised %}Go to the <strong style="color:var(--gold)">Goals</strong> tab.{% else %}The emperor can set goals.{% endif %}
     </div>
-  </div>
-  {% endif %}
+  </div>{% endif %}
 
   <!-- Claim health -->
-  <div class="ep-card" style="animation-delay:0.1s">
+  <div class="ep-card" style="animation-delay:.1s">
     <div class="ep-card-title">📋 Claim Health</div>
     <table style="width:100%;font-size:13px;border-collapse:collapse">
       <tbody>
-        {% for label, val in [
-          ("Claim Tier", "Tier " ~ tier),
-          ("Region", claim.regionName),
-          ("Territory Tiles", tiles|format_int),
-          ("Treasury", treasury|int|format_int ~ " coins"),
-          ("Supplies", supplies|int|format_int ~ " (" ~ upkeep|round(1) ~ "/day)"),
-        ] %}
-        <tr style="border-bottom:1px solid rgba(42,58,80,0.4)">
-          <td style="padding:7px 0;color:var(--text-muted);width:50%">{{ label }}</td>
-          <td style="padding:7px 0;font-weight:500;color:var(--text-primary)">{{ val }}</td>
-        </tr>
+        {% for label,val in [("Tier","Tier "~tier),("Region",claim.regionName),("Tiles",tiles|format_int),("Treasury",treasury|int|format_int~" coins"),("Supplies",supplies|int|format_int~" ("~upkeep|round(1)~"/day)"),("Members",member_count)] %}
+        <tr style="border-bottom:1px solid rgba(42,58,80,.4)"><td style="padding:6px 0;color:var(--text-muted);width:48%">{{ label }}</td><td style="padding:6px 0;font-weight:500;color:var(--text-primary)">{{ val }}</td></tr>
         {% endfor %}
         {% if supply_days is not none %}
-        <tr style="border-bottom:1px solid rgba(42,58,80,0.4)">
-          <td style="padding:7px 0;color:var(--text-muted)">Supplies Runway</td>
-          <td style="padding:7px 0;font-weight:600;color:{% if supply_status=='critical' %}#f06060{% elif supply_status=='warning' %}#e0a030{% else %}var(--teal-light){% endif %}">
-            {{ supply_days|round(1) }} days
-          </td>
-        </tr>
+        <tr><td style="padding:6px 0;color:var(--text-muted)">Runway</td><td style="padding:6px 0;font-weight:600;color:{% if supply_status=='critical' %}#f06060{% elif supply_status=='warning' %}#e0a030{% else %}var(--teal-light){% endif %}">{{ supply_days|round(1) }} days</td></tr>
         {% endif %}
-        <tr>
-          <td style="padding:7px 0;color:var(--text-muted)">Members</td>
-          <td style="padding:7px 0;font-weight:500;color:var(--text-primary)">{{ member_count }}</td>
-        </tr>
       </tbody>
     </table>
   </div>
 
+  <!-- Minimap -->
+  {% if layout %}
+  <div class="ep-card" style="animation-delay:.14s;padding:0;overflow:hidden">
+    <div style="padding:14px 18px 10px;border-bottom:1px solid var(--border)">
+      <div class="ep-card-title" style="margin-bottom:0">🗺 Claim Minimap</div>
+    </div>
+    <div class="minimap-wrap">
+      <canvas id="claim-minimap" height="220"></canvas>
+    </div>
+    <div class="minimap-legend">
+      <span><span class="legend-dot" style="background:#2a4a2a"></span>Claimed tile</span>
+      <span><span class="legend-dot" style="background:#c8922a"></span>Building</span>
+      <span><span class="legend-dot" style="background:#3dbdaa"></span>Market/Stall</span>
+      <span><span class="legend-dot" style="background:#60a5fa"></span>Storage</span>
+    </div>
+  </div>
+  {% endif %}
+
   {% if supply_status in ('critical','warning') %}
-  <div class="ep-card" style="border-color:{% if supply_status=='critical' %}#7a2222{% else %}#7a5500{% endif %};animation-delay:0.15s">
-    <div class="ep-card-title" style="color:{% if supply_status=='critical' %}#f06060{% else %}#e0a030{% endif %}">
-      {% if supply_status=='critical' %}🔴 Critical: Supplies Critically Low{% else %}⚠ Warning: Supplies Running Low{% endif %}
-    </div>
-    <div style="font-size:13px;color:var(--text-secondary);line-height:1.6">
-      At {{ upkeep|round(1) }}/day, your {{ supplies|int|format_int }} supplies will last <strong style="color:{% if supply_status=='critical' %}#f06060{% else %}#e0a030{% endif %}">{{ supply_days|round(1) }} more days</strong>.
-      {% if supply_status=='critical' %}Replenish immediately!{% else %}Consider restocking soon.{% endif %}
-    </div>
-  </div>
-  {% endif %}
+  <div class="ep-card" style="border-color:{% if supply_status=='critical' %}#7a2222{% else %}#7a5500{% endif %};animation-delay:.17s">
+    <div class="ep-card-title" style="color:{% if supply_status=='critical' %}#f06060{% else %}#e0a030{% endif %}">{% if supply_status=='critical' %}🔴 Critical: Low Supplies{% else %}⚠ Warning: Supplies Low{% endif %}</div>
+    <div style="font-size:13px;color:var(--text-secondary);line-height:1.6">{{ supplies|int|format_int }} supplies at {{ upkeep|round(1) }}/day = <strong style="color:{% if supply_status=='critical' %}#f06060{% else %}#e0a030{% endif %}">{{ supply_days|round(1) }} days</strong> remaining.{% if supply_status=='critical' %} Replenish immediately!{% endif %}</div>
+  </div>{% endif %}
+</div>
 
-</div><!-- /left -->
-
-<!-- Right col -->
+<!-- Right col: rotating member stats -->
 <div>
-  {% if citizens %}
-  <div class="ep-card" style="animation-delay:0.08s">
-    <div class="ep-card-title">👥 Member Snapshot</div>
-    {% set avg_level = (citizens|sum(attribute='totalLevel') / member_count)|round(0)|int %}
-    {% set max_level = citizens|map(attribute='highestLevel')|max %}
-    <div style="display:flex;gap:10px;margin-bottom:14px">
-      <div class="progress-card" style="flex:1"><div class="progress-card-title">Avg Total Level</div><div class="progress-card-val">{{ avg_level }}</div></div>
-      <div class="progress-card" style="flex:1"><div class="progress-card-title">Top Skill</div><div class="progress-card-val">{{ max_level }}</div></div>
-    </div>
-    <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;letter-spacing:0.05em;text-transform:uppercase">Top Members</div>
-    {% for c in citizens[:8] %}
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(42,58,80,0.4);font-size:13px">
-      <span style="color:var(--text-primary);font-weight:{% if loop.index<=3 %}600{% else %}400{% endif %}">
-        {% if loop.index==1 %}🥇 {% elif loop.index==2 %}🥈 {% elif loop.index==3 %}🥉 {% endif %}{{ c.userName }}
-      </span>
-      <span style="color:var(--gold);font-weight:600">{{ c.totalLevel }}</span>
-    </div>
-    {% endfor %}
-    {% if member_count > 8 %}
-    <div style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:8px">+{{ member_count-8 }} more — see Members tab</div>
-    {% endif %}
-  </div>
-  {% endif %}
+{% if citizens %}
+<div class="ep-card" style="animation-delay:.07s">
+  <div class="ep-card-title">👥 Member Snapshot</div>
+  {% set avg_level  = (citizens|sum(attribute='totalLevel')/member_count)|round(0)|int %}
+  {% set max_level  = citizens|map(attribute='highestLevel')|max %}
+  {% set max_total  = citizens|map(attribute='totalLevel')|max %}
+  {% set avg_xp     = (citizens|sum(attribute='totalXP')/member_count)|round(0)|int %}
+  {% set top_skill_citizen = citizens|sort(attribute='highestLevel')|last %}
 
-  <!-- Auth admins list -->
-  {% if db_admins %}
-  <div class="ep-card" style="animation-delay:0.12s">
-    <div class="ep-card-title">⚔ Planner Admins</div>
-    {% for a in db_admins %}
-    <div class="admin-row">
-      <span class="admin-name">{{ a.username }}</span>
-      <span class="admin-by">by {{ a.granted_by }}</span>
-    </div>
+  {% set officer_count = members_map.values()|selectattr('officerPermission','gt',0)|list|length %}
+  {% set goal_sid = goals.target_skill_id|int if goals.target_skill_id else 0 %}
+  {% set skill_met = citizens|selectattr('skills.'~goal_sid,'ge',(goals.min_skill_level|int if goals.min_skill_level else 0))|list|length if goal_sid and goals.min_skill_level else 0 %}
+  {% set active_7d = members_map.values()|list|length %}
+
+  <div class="stats-rotator" id="stats-rotator">
+    {% set slides = [
+      ("🏆","Top Level",max_total,"overall total level","",""),
+      ("📊","Avg Total Level",avg_level,"across all members","",""),
+      ("⚔","Highest Skill",max_level,"best single skill level","",""),
+      ("🌟","Top Player",top_skill_citizen.userName,"highest skilled member","",""),
+      ("💎","Avg XP",avg_xp,"average XP per member","",""),
+      ("👑","Officers",officer_count,"officers & co-owners","",""),
+      ("🎯","Skill Goal Met",skill_met if goal_sid else "—","members meeting skill target","",""),
+      ("🧙","Members",member_count,"total in this claim","",""),
+      ("🥇","#1 Member",citizens[0].userName if citizens else "—","highest total level","",""),
+      ("📈","Tier Progress",tier,"current claim tier","",""),
+    ] %}
+    {% for icon,title,val,sub,_a,_b in slides %}
+    <div class="stat-slide{% if loop.index==1 %} active{% endif %}" id="slide-{{ loop.index0 }}">
+      <div style="text-align:center;padding:16px 8px">
+        <div style="font-size:38px;margin-bottom:8px">{{ icon }}</div>
+        <div style="font-size:11px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px">{{ title }}</div>
+        <div style="font-size:32px;font-weight:700;color:var(--gold-light);letter-spacing:-.5px;margin-bottom:4px">{{ val }}</div>
+        <div style="font-size:12px;color:var(--text-muted)">{{ sub }}</div>
+      </div>
+    </div>{% endfor %}
+  </div>
+  <div class="rotator-timer"><div class="rotator-timer-fill" id="rotator-fill"></div></div>
+  <div style="display:flex;justify-content:center;gap:6px;margin-top:8px" id="rotator-dots">
+    {% for i in range(10) %}
+    <div style="width:6px;height:6px;border-radius:50%;background:{% if i==0 %}var(--gold){% else %}var(--border){% endif %};cursor:pointer;transition:background .2s" onclick="goSlide({{ i }})"></div>
     {% endfor %}
   </div>
-  {% endif %}
-</div><!-- /right -->
-</div><!-- /ep-grid -->
+</div>
+{% endif %}
+
+{% if db_admins %}
+<div class="ep-card" style="animation-delay:.12s">
+  <div class="ep-card-title">⚔ Planner Admins</div>
+  {% for a in db_admins %}
+  <div class="admin-row"><span class="admin-name">{{ a.username }}</span><span class="admin-by">by {{ a.granted_by }}</span></div>
+  {% endfor %}
+</div>{% endif %}
+</div>
+</div>
 </div><!-- /tab-overview -->
 
-
-<!-- ════════════════════════════════════════════════════════════════════
-     TAB: GOALS (edit — admin only)
-     ════════════════════════════════════════════════════════════════════ -->
+<!-- ══ TAB: GOALS ══ -->
 <div class="ep-tab-section" id="tab-goals">
 {% if not authorised %}
 <div class="ep-card" style="text-align:center;padding:32px">
-  <div style="font-size:32px;margin-bottom:12px;opacity:0.5">🔒</div>
+  <div style="font-size:32px;margin-bottom:12px;opacity:.5">🔒</div>
   <div style="font-size:15px;font-weight:600;color:var(--text-secondary);margin-bottom:8px">Admin access required</div>
-  <div style="font-size:13px;color:var(--text-muted);margin-bottom:20px">
-    Only the emperor and granted admins can set goals.<br>
-    Click <strong style="color:var(--gold)">Verify Identity</strong> in the bar above to authenticate.
-  </div>
+  <div style="font-size:13px;color:var(--text-muted)">Verify your identity above, or ask the emperor to grant you access.</div>
 </div>
 {% else %}
-
 <form method="POST" action="/empire/goals/save">
 <input type="hidden" name="claim_id" value="{{ claim_id }}">
-<div style="max-width:700px">
-
+<div style="max-width:680px">
   <div class="ep-card">
     <div class="ep-card-title">🏰 Claim Growth</div>
-    <div class="goal-row">
-      <span class="goal-label">Target Claim Tier</span>
-      <input class="goal-input" type="number" name="tier_target" min="1" max="20" placeholder="e.g. 5" value="{{ goals.tier_target or '' }}">
-      <span class="goal-current">Now: T{{ tier }}</span>
-    </div>
-    <div class="goal-row">
-      <span class="goal-label">Tile Goal</span>
-      <input class="goal-input" type="number" name="tiles_target" min="1" placeholder="e.g. 10000" value="{{ goals.tiles_target or '' }}">
-      <span class="goal-current">Now: {{ tiles|format_int }}</span>
-    </div>
-    <div class="goal-row">
-      <span class="goal-label">Member Goal</span>
-      <input class="goal-input" type="number" name="member_target" min="1" placeholder="e.g. 50" value="{{ goals.member_target or '' }}">
-      <span class="goal-current">Now: {{ member_count }}</span>
-    </div>
+    <div class="goal-row"><span class="goal-label">Target Claim Tier</span><input class="goal-input" type="number" name="tier_target" min="1" max="20" value="{{ goals.tier_target or '' }}" placeholder="e.g. 6"><span class="goal-current">Now: T{{ tier }}</span></div>
+    <div class="goal-row"><span class="goal-label">Tile Goal</span><input class="goal-input" type="number" name="tiles_target" min="1" value="{{ goals.tiles_target or '' }}" placeholder="e.g. 10000"><span class="goal-current">Now: {{ tiles|format_int }}</span></div>
+    <div class="goal-row"><span class="goal-label">Member Goal</span><input class="goal-input" type="number" name="member_target" min="1" value="{{ goals.member_target or '' }}" placeholder="e.g. 50"><span class="goal-current">Now: {{ member_count }}</span></div>
   </div>
-
   <div class="ep-card">
     <div class="ep-card-title">💰 Economy</div>
-    <div class="goal-row">
-      <span class="goal-label">Treasury Target</span>
-      <input class="goal-input" type="number" name="treasury_target" min="0" placeholder="e.g. 500000" value="{{ goals.treasury_target or '' }}">
-      <span class="goal-current">Now: {{ treasury|int|format_int }}</span>
-    </div>
-    <div class="goal-hint">Minimum coin reserve to keep the empire funded for upgrades and research.</div>
-    <div class="goal-row" style="margin-top:12px">
-      <span class="goal-label">Supplies Stockpile</span>
-      <input class="goal-input" type="number" name="supplies_target" min="0" placeholder="e.g. 100000" value="{{ goals.supplies_target or '' }}">
-      <span class="goal-current">Now: {{ supplies|int|format_int }}</span>
-    </div>
-    <div class="goal-hint">Upkeep is {{ upkeep|round(1) }}/day → {{ (upkeep*30)|round(0)|int|format_int }}/month. Keep above this as a buffer.</div>
+    <div class="goal-row"><span class="goal-label">Treasury Target</span><input class="goal-input" type="number" name="treasury_target" min="0" value="{{ goals.treasury_target or '' }}" placeholder="e.g. 500000"><span class="goal-current">Now: {{ treasury|int|format_int }}</span></div>
+    <div class="goal-hint">Minimum coin reserve for upgrades and research.</div>
+    <div class="goal-row" style="margin-top:11px"><span class="goal-label">Supplies Target</span><input class="goal-input" type="number" name="supplies_target" min="0" value="{{ goals.supplies_target or '' }}" placeholder="e.g. 100000"><span class="goal-current">Now: {{ supplies|int|format_int }}</span></div>
+    <div class="goal-hint">Upkeep {{ upkeep|round(1) }}/day → {{ (upkeep*30)|round(0)|int|format_int }}/month.</div>
   </div>
-
   <div class="ep-card">
     <div class="ep-card-title">⚔ Member Skill Goal</div>
-    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px;line-height:1.5">
-      Set a target skill and minimum level. Members will be highlighted green/red in the Members tab.
-    </p>
-    <div class="goal-row">
-      <span class="goal-label">Skill to track</span>
-      <select class="goal-select" name="target_skill_id">
-        <option value="">— Select skill —</option>
-        {% for sid, sname in skill_names.items() %}
-        <option value="{{ sid }}" {% if goals.target_skill_id == sid|string %}selected{% endif %}>{{ sname }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="goal-row">
-      <span class="goal-label">Minimum Level</span>
-      <input class="goal-input" type="number" name="min_skill_level" min="1" max="99" placeholder="e.g. 20" value="{{ goals.min_skill_level or '' }}">
-    </div>
-    <div class="goal-hint">Members below this level will appear red in the Members tab.</div>
-    <div class="goal-row" style="margin-top:12px">
-      <span class="goal-label">Focus Skills</span>
-      <input class="goal-input" name="focus_skill_ids" type="text" placeholder="e.g. 5,6,9" value="{{ goals.focus_skill_ids or '' }}" style="max-width:280px">
-    </div>
-    <div class="goal-hint">Comma-separated skill IDs to show as columns in the Members table.</div>
+    <div class="goal-row"><span class="goal-label">Skill to track</span><select class="goal-select" name="target_skill_id"><option value="">— Select skill —</option>{% for sid,sname in skill_names.items() %}<option value="{{ sid }}" {% if goals.target_skill_id==sid|string %}selected{% endif %}>{{ sname }}</option>{% endfor %}</select></div>
+    <div class="goal-row"><span class="goal-label">Minimum Level</span><input class="goal-input" type="number" name="min_skill_level" min="1" max="99" value="{{ goals.min_skill_level or '' }}" placeholder="e.g. 20"></div>
+    <div class="goal-hint">Members below this show red in the Members tab.</div>
+    <div class="goal-row" style="margin-top:11px"><span class="goal-label">Focus Skills</span><input class="goal-input" type="text" name="focus_skill_ids" value="{{ goals.focus_skill_ids or '' }}" placeholder="e.g. 5,6,9" style="max-width:260px"></div>
+    <div class="goal-hint">Skill IDs (comma-separated) shown as columns in Members table.</div>
   </div>
-
-  <div style="display:flex;gap:10px;margin-bottom:20px">
+  <div style="display:flex;gap:10px;margin-bottom:18px">
     <button type="submit" class="ep-btn ep-btn-primary">💾 Save Goals</button>
     <a href="/empire/?claim_id={{ claim_id }}" class="ep-btn ep-btn-ghost">Cancel</a>
   </div>
 </div>
 </form>
-
-<!-- Custom goals (AJAX) -->
-<div class="ep-card" style="max-width:700px">
+<div class="ep-card" style="max-width:680px">
   <div class="ep-card-title">📝 Custom Goals</div>
-  <p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px">
-    Free-form goals shown on the Overview — visible to all members when they load the claim.
-  </p>
   <div id="custom-goals-list">
     {% for g in custom_goals %}
     <div class="custom-goal-item" id="cg-{{ g.id }}">
-      <span style="color:var(--gold)">◆</span>
-      <span>{{ g.text }}</span>
-      <span class="by">{{ g.created_by }}</span>
+      <span style="color:var(--gold)">◆</span><span>{{ g.text }}</span>
+      <span style="font-size:11px;color:var(--text-muted)">{{ g.created_by }}</span>
       <button class="custom-goal-del" onclick="deleteCustomGoal({{ g.id }})">×</button>
-    </div>
-    {% endfor %}
+    </div>{% endfor %}
   </div>
   <div class="custom-goal-add">
-    <input class="goal-input" type="text" id="cg-input" placeholder="Add a custom goal…" style="max-width:100%;flex:1"
-           onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomGoal()}">
+    <input class="goal-input" type="text" id="cg-input" placeholder="Add a custom goal…" style="max-width:100%;flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomGoal()}">
     <button type="button" class="ep-btn ep-btn-ghost ep-btn-sm" onclick="addCustomGoal()">+ Add</button>
   </div>
 </div>
-
 {% endif %}
 </div><!-- /tab-goals -->
 
-
-<!-- ════════════════════════════════════════════════════════════════════
-     TAB: MEMBERS
-     ════════════════════════════════════════════════════════════════════ -->
+<!-- ══ TAB: MEMBERS ══ -->
 <div class="ep-tab-section" id="tab-members">
-  {% set focus_ids = [] %}
-  {% if goals.focus_skill_ids %}
-    {% for fid in goals.focus_skill_ids.split(',') %}
-      {% if fid.strip()|int > 0 %}{% set _ = focus_ids.append(fid.strip()|int) %}{% endif %}
-    {% endfor %}
-  {% endif %}
+{% set focus_ids=[] %}
+{% if goals.focus_skill_ids %}{% for fid in goals.focus_skill_ids.split(',') %}{% if fid.strip()|int>0 %}{% set _=focus_ids.append(fid.strip()|int) %}{% endif %}{% endfor %}{% endif %}
 
-  <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
-    <input type="text" id="member-search" class="goal-input" style="max-width:240px;flex:1"
-           placeholder="Filter by name…" oninput="filterMembers()">
-    <select class="goal-select" id="member-sort" style="max-width:180px" onchange="sortMembers()">
-      <option value="total">Total Level ↓</option>
-      <option value="highest">Highest Skill ↓</option>
-      <option value="name">Name A–Z</option>
-    </select>
-    <span style="font-size:12px;color:var(--text-muted)">
-      {{ member_count }} members · <span id="members-shown">{{ member_count }}</span> shown
-    </span>
-  </div>
+{% set goal_skill_id  = goals.target_skill_id|int if goals.target_skill_id else 0 %}
+{% set goal_skill_lvl = goals.min_skill_level|int  if goals.min_skill_level  else 0 %}
 
-  {% set goal_skill_id  = goals.target_skill_id|int if goals.target_skill_id else 0 %}
-  {% set goal_skill_lvl = goals.min_skill_level|int  if goals.min_skill_level  else 0 %}
+<div class="member-filters">
+  <input type="text" id="member-search" class="filter-input" placeholder="Filter by name…" oninput="filterMembers()">
+  <select id="member-sort" class="filter-select" onchange="sortMembers()">
+    <option value="total">Total Level ↓</option>
+    <option value="highest">Top Skill ↓</option>
+    <option value="name">Name A–Z</option>
+    <option value="seniority">Seniority (oldest)</option>
+    <option value="recent">Last Login (recent)</option>
+  </select>
+  <select id="member-cat-filter" class="filter-select" onchange="filterMembers()">
+    <option value="all">All Categories</option>
+    <option value="profession">Profession Skills</option>
+    <option value="adventure">Adventure Skills</option>
+  </select>
+  <select id="member-role-filter" class="filter-select" onchange="filterMembers()">
+    <option value="all">All Roles</option>
+    <option value="officer">Officers / Admins</option>
+    <option value="member">Regular Members</option>
+  </select>
+  <span style="font-size:12px;color:var(--text-muted)">{{ member_count }} members · <span id="members-shown">{{ member_count }}</span> shown</span>
+</div>
 
-  <div class="ep-card" style="padding:0;overflow:hidden">
-    <div style="overflow-x:auto">
-    <table class="member-table" id="member-table">
-      <thead>
-        <tr>
-          <th style="width:36px">#</th>
-          <th>Member</th>
-          <th>Total Lv</th>
-          <th>Top Lv</th>
-          {% if goal_skill_id and goal_skill_lvl %}
-          <th>{{ skill_names.get(goal_skill_id,'Skill') }} (goal: {{ goal_skill_lvl }}+)</th>
-          {% endif %}
-          {% for fid in focus_ids %}
-          <th>{{ skill_names.get(fid,'Sk'~fid) }}</th>
-          {% endfor %}
-          <th>Role</th>
-        </tr>
-      </thead>
-      <tbody id="member-tbody">
-        {% for c in citizens %}
-        {% set mslvl = c.skills.get(goal_skill_id, 0) if goal_skill_id else 0 %}
-        <tr data-name="{{ c.userName|lower }}" data-total="{{ c.totalLevel }}" data-highest="{{ c.highestLevel }}">
-          <td style="color:var(--text-muted);font-size:11px">{{ loop.index }}</td>
-          <td><span class="member-name">{{ c.userName }}</span></td>
-          <td><strong>{{ c.totalLevel }}</strong></td>
-          <td style="color:var(--text-muted)">{{ c.highestLevel }}</td>
-          {% if goal_skill_id and goal_skill_lvl %}
-          <td>
-            {% if mslvl >= goal_skill_lvl %}
-              <span class="skill-badge skill-met">{{ mslvl }} ✓</span>
-            {% elif mslvl >= goal_skill_lvl * 0.75 %}
-              <span class="skill-badge skill-close">{{ mslvl }}</span>
-            {% elif mslvl > 0 %}
-              <span class="skill-badge skill-low">{{ mslvl }}</span>
-            {% else %}
-              <span class="skill-badge skill-none">—</span>
-            {% endif %}
-          </td>
-          {% endif %}
-          {% for fid in focus_ids %}
-          {% set flvl = c.skills.get(fid, 0) %}
-          <td><span class="skill-badge {% if flvl > 0 %}skill-met{% else %}skill-none{% endif %}">{{ flvl if flvl > 0 else '—' }}</span></td>
-          {% endfor %}
-          <td>
-            {% if c.userName in db_admins|map(attribute='username')|list %}
-              <span class="meta-chip gold" style="font-size:10px">Admin</span>
-            {% elif c.userName == owner_username %}
-              <span class="meta-chip gold" style="font-size:10px">⚔ Emperor</span>
-            {% else %}
-              <span style="font-size:11px;color:var(--text-muted)">Member</span>
-            {% endif %}
-          </td>
-        </tr>
+<div class="ep-card" style="padding:0;overflow:hidden">
+  <div style="overflow-x:auto">
+  <table class="member-table" id="member-table">
+    <thead>
+      <tr>
+        <th style="width:28px">#</th>
+        <th class="sortable-th" onclick="colSort('name')">Member <span class="sort-ind" data-col="name"></span></th>
+        <th class="sortable-th" onclick="colSort('total')">Total Lv <span class="sort-ind" data-col="total"></span></th>
+        <th>Top Skill</th>
+        <th class="sortable-th" onclick="colSort('highest')">Top Lv <span class="sort-ind" data-col="highest"></span></th>
+        {% for sid in skill_order %}{% set sc = skill_colors[sid] %}
+        <th class="sk-th sortable-th {% if sid in profession_skills %}sk-cat-prof{% else %}sk-cat-adv{% endif %}"
+            onclick="colSort('sk{{ sid }}')"
+            style="background:{{ sc.hbg }};color:{{ sc.txt }}">
+          {{ skill_names[sid] }}<br><span class="sort-ind" data-col="sk{{ sid }}"></span>
+        </th>
         {% endfor %}
-      </tbody>
-    </table>
-    </div>
-  </div>
-
-  {% if goal_skill_id and goal_skill_lvl and citizens %}
-  {% set skill_nm = skill_names.get(goal_skill_id,'Skill') %}
-  {% set met = citizens|selectattr('skills.'~goal_skill_id, 'ge', goal_skill_lvl)|list|length %}
-  {% set not_met = member_count - met %}
-  <div class="ep-card" style="margin-top:16px">
-    <div class="ep-card-title">{{ skill_nm }} Lv {{ goal_skill_lvl }}+ — Goal Progress</div>
-    <div class="progress-grid">
-      <div class="progress-card">
-        <div class="progress-card-title">Meeting Goal</div>
-        <div class="progress-card-val" style="color:var(--teal-light)">{{ met }}</div>
-        <div class="progress-card-sub">of {{ member_count }} members</div>
-        <div class="mini-bar"><div class="mini-bar-fill teal" style="width:{{ (met/member_count*100) if member_count else 0 }}%"></div></div>
-      </div>
-      <div class="progress-card">
-        <div class="progress-card-title">Still Needed</div>
-        <div class="progress-card-val" style="color:{% if not_met>0 %}#f06060{% else %}var(--teal-light){% endif %}">{{ not_met }}</div>
-        <div class="progress-card-sub">{% if not_met==0 %}All qualified! 🎉{% else %}need to level up{% endif %}</div>
-      </div>
-    </div>
-  </div>
-  {% endif %}
-</div><!-- /tab-members -->
-
-
-<!-- ════════════════════════════════════════════════════════════════════
-     TAB: ADMIN ACCESS (emperor only)
-     ════════════════════════════════════════════════════════════════════ -->
-{% if emperor %}
-<div class="ep-tab-section" id="tab-admin">
-  <div style="max-width:600px">
-
-    <div class="ep-card">
-      <div class="ep-card-title">⚙ Planner Admins</div>
-      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;line-height:1.5">
-        Admins can set and edit goals for this claim. Only you (the emperor) can grant or revoke this access.
-        The person must have verified their identity on this page at least once before you can grant them access.
-      </p>
-
-      {% if db_admins %}
-      <div style="margin-bottom:20px">
-        {% for a in db_admins %}
-        <div class="admin-row">
-          <span class="admin-name">{{ a.username }}</span>
-          <span class="admin-by">granted by {{ a.granted_by }}</span>
-          <form method="POST" action="/empire/admin/revoke" style="margin:0">
-            <input type="hidden" name="claim_id" value="{{ claim_id }}">
-            <input type="hidden" name="username" value="{{ a.username }}">
-            <button type="submit" class="ep-btn ep-btn-danger ep-btn-sm">Revoke</button>
-          </form>
-        </div>
+        <th>Role</th>
+        <th class="sortable-th" onclick="colSort('joined')">Since <span class="sort-ind" data-col="joined"></span></th>
+        <th class="sortable-th" onclick="colSort('login')">Last Login <span class="sort-ind" data-col="login"></span></th>
+      </tr>
+    </thead>
+    <tbody id="member-tbody">
+      {% for c in citizens %}
+      {% set mem  = members_map.get(c.userName, {}) %}
+      {% set is_officer = mem.get('officerPermission',0)|int > 0 or mem.get('coOwnerPermission',0)|int > 0 %}
+      {% set joined_str = mem.get('createdAt','') %}
+      {% set login_str  = mem.get('lastLoginTimestamp','') %}
+      {% set joined_ts  = joined_str[:10] if joined_str else '—' %}
+      {% set login_ts   = login_str[:10] if login_str else '—' %}
+      <tr data-name="{{ c.userName|lower }}"
+          data-total="{{ c.totalLevel }}"
+          data-highest="{{ c.highestLevel }}"
+          data-joined="{{ joined_str }}"
+          data-login="{{ login_str }}"
+          data-officer="{{ '1' if is_officer else '0' }}"
+          data-skills='{{ c.skills|tojson }}'>
+        <td style="color:var(--text-muted);font-size:11px">{{ loop.index }}</td>
+        <td><span class="member-name">{{ c.userName }}</span></td>
+        <td><strong>{{ c.totalLevel }}</strong></td>
+        <td style="color:var(--text-muted);font-size:12px">{{ c.highestSkill }}</td>
+        <td>{{ c.highestLevel }}</td>
+        {% for sid in skill_order %}
+        {% set sc = skill_colors[sid] %}
+        {% set slvl = c.skills.get(sid, 0) %}
+        <td class="sk-td {% if sid in profession_skills %}sk-cat-prof{% else %}sk-cat-adv{% endif %}"
+            style="background:{{ sc.cbg }}">
+          {% if slvl > 0 %}<span style="font-weight:600;color:{{ sc.txt }}">{{ slvl }}</span>{% else %}<span style="color:var(--text-muted);opacity:.35">—</span>{% endif %}
+        </td>
         {% endfor %}
-      </div>
-      {% else %}
-      <div style="font-size:13px;color:var(--text-muted);margin-bottom:20px;font-style:italic">
-        No admins granted yet. Add members below.
-      </div>
-      {% endif %}
-
-      <form method="POST" action="/empire/admin/grant">
-        <input type="hidden" name="claim_id" value="{{ claim_id }}">
-        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-          <input class="goal-input" type="text" name="username" placeholder="Player username…" style="max-width:240px;flex:1">
-          <button type="submit" class="ep-btn ep-btn-teal">+ Grant Admin Access</button>
-        </div>
-        <div style="font-size:11px;color:var(--text-muted);margin-top:8px">
-          The player must be a member of this claim and have already verified their identity on this page.
-        </div>
-      </form>
-    </div>
-
-    <div class="ep-card">
-      <div class="ep-card-title">ℹ How Verification Works</div>
-      <div style="font-size:13px;color:var(--text-secondary);line-height:1.7">
-        <strong style="color:var(--text-primary)">1.</strong> The member opens this page and clicks <em>Verify Identity</em> in the bar above.<br>
-        <strong style="color:var(--text-primary)">2.</strong> They receive a unique code (e.g. <code style="color:var(--gold);background:var(--bg-deep);padding:1px 6px;border-radius:3px">A3F92B1C</code>).<br>
-        <strong style="color:var(--text-primary)">3.</strong> They post <code style="color:var(--gold);background:var(--bg-deep);padding:1px 6px;border-radius:3px">bitjita:auth:A3F92B1C</code> in in-game chat channel 2.<br>
-        <strong style="color:var(--text-primary)">4.</strong> Bitjita confirms who they are — no passwords involved.<br>
-        <strong style="color:var(--text-primary)">5.</strong> You then enter their username above to grant them edit access.
-      </div>
-    </div>
-
+        <td>{% if c.userName==owner_username %}<span class="meta-chip gold" style="font-size:10px">⚔ Emperor</span>{% elif is_officer %}<span class="meta-chip teal" style="font-size:10px">Officer</span>{% else %}<span style="font-size:11px;color:var(--text-muted)">Member</span>{% endif %}</td>
+        <td style="font-size:11px;color:var(--text-muted)">{{ joined_ts }}</td>
+        <td style="font-size:11px;color:var(--text-muted)">{{ login_ts }}</td>
+      </tr>{% endfor %}
+    </tbody>
+  </table>
   </div>
 </div>
+</div><!-- /tab-members -->
+
+<!-- ══ TAB: INVENTORY ══ -->
+<div class="ep-tab-section" id="tab-inventory">
+{% if inventories %}
+{% set building_types = inventories|map(attribute='buildingName')|unique|list %}
+<div class="inv-filters">
+  <input type="text" id="inv-search" class="filter-input" placeholder="Filter by building name…" oninput="filterInventory()">
+  <select id="inv-type-filter" class="filter-select" onchange="filterInventory()">
+    <option value="all">All Building Types</option>
+    {% for bt in building_types %}<option value="{{ bt }}">{{ bt }}</option>{% endfor %}
+    <option value="storage">Storage / Chests</option>
+    <option value="market">Market Stalls</option>
+    <option value="vault">Vaults</option>
+  </select>
+  <select id="inv-rarity-filter" class="filter-select" onchange="filterInventory()">
+    <option value="all">All Rarities</option>
+    <option value="Common">Common</option>
+    <option value="Uncommon">Uncommon</option>
+    <option value="Rare">Rare</option>
+    <option value="Epic">Epic</option>
+    <option value="Legendary">Legendary</option>
+    <option value="Mythic">Mythic</option>
+  </select>
+  <span style="font-size:12px;color:var(--text-muted)">{{ inventories|length }} containers · <span id="inv-shown">{{ inventories|length }}</span> shown</span>
+</div>
+
+<div class="inv-grid" id="inv-grid">
+{% for b in inventories %}
+{% set has_items = b.inventory|length > 0 %}
+{% set building_icon = {'Storage Chest':'📦','Vault':'🔒','Market Stall':'🏪','Crafting Station':'⚒','Great Hall':'🏛','Warehouse':'🏢'}.get(b.buildingName,'🏗') %}
+<div class="inv-card" id="inv-{{ loop.index0 }}"
+     data-name="{{ (b.nickname or b.buildingName)|lower }}"
+     data-type="{{ b.buildingName|lower }}"
+     data-rarities="{{ b.inventory|map(attribute='rarityStr')|join(',') }}"
+     onclick="toggleInvCard({{ loop.index0 }})">
+  <div class="inv-card-header">
+    <div class="inv-card-icon">{{ building_icon }}</div>
+    <div>
+      <div class="inv-card-name">{{ b.nickname or b.buildingName }}</div>
+      {% if b.nickname %}<div class="inv-card-nick">{{ b.buildingName }}</div>{% endif %}
+    </div>
+    <div class="inv-card-coords">{{ b.locationX }}, {{ b.locationZ }}</div>
+  </div>
+  <div class="inv-card-stats">
+    <span>{{ b.slot_count }} slot{{ 's' if b.slot_count!=1 }}</span>
+    <span>{{ b.total_items|format_int }} total items</span>
+    {% if not has_items %}<span style="color:var(--text-muted);font-style:italic">Empty</span>{% endif %}
+  </div>
+  <!-- Detail panel -->
+  <div class="inv-detail" id="inv-detail-{{ loop.index0 }}">
+    <div style="font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px">Contents</div>
+    {% if has_items %}
+    {% for item in b.inventory %}
+    <div class="inv-item-row">
+      <span class="rarity-badge {{ item.rarityStr }}">{{ item.rarityStr }}</span>
+      {% if item.tier %}<span style="font-size:10px;color:var(--text-muted);background:var(--bg-deep);border:1px solid var(--border);border-radius:3px;padding:1px 5px">T{{ item.tier }}</span>{% endif %}
+      <span class="inv-item-name">{{ item.name }}</span>
+      {% if item.tag %}<span style="font-size:10px;color:var(--text-muted)">{{ item.tag }}</span>{% endif %}
+      {% if item.locked %}<span style="font-size:10px;color:#f06060">🔒</span>{% endif %}
+      <span class="inv-item-qty">×{{ item.quantity|format_int }}</span>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div style="font-size:13px;color:var(--text-muted);font-style:italic;text-align:center;padding:8px">Empty container</div>
+    {% endif %}
+    <div style="font-size:11px;color:var(--text-muted);margin-top:10px;padding-top:8px;border-top:1px solid var(--border)">
+      📍 Coordinates: {{ b.locationX }}, {{ b.locationZ }}
+    </div>
+  </div>
+</div>{% endfor %}
+</div>
+{% else %}
+<div class="ep-hint"><div class="ep-hint-icon">📦</div><div class="ep-hint-title">No inventory data</div><div class="ep-hint-sub">Inventory data couldn't be loaded for this claim.</div></div>
 {% endif %}
+</div><!-- /tab-inventory -->
+
+<!-- ══ TAB: ADMIN (emperor only) ══ -->
+{% if emperor %}
+<div class="ep-tab-section" id="tab-admin">
+<div style="max-width:580px">
+  <div class="ep-card">
+    <div class="ep-card-title">⚙ Planner Admins</div>
+    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px;line-height:1.5">Admins can set and edit goals. Only you (the emperor) can grant or revoke access.</p>
+    {% if db_admins %}
+    <div style="margin-bottom:18px">{% for a in db_admins %}
+    <div class="admin-row">
+      <span class="admin-name">{{ a.username }}</span>
+      <span class="admin-by">granted by {{ a.granted_by }}</span>
+      <form method="POST" action="/empire/admin/revoke" style="margin:0">
+        <input type="hidden" name="claim_id" value="{{ claim_id }}">
+        <input type="hidden" name="username" value="{{ a.username }}">
+        <button type="submit" class="ep-btn ep-btn-danger ep-btn-sm">Revoke</button>
+      </form>
+    </div>{% endfor %}</div>
+    {% else %}<div style="font-size:13px;color:var(--text-muted);margin-bottom:18px;font-style:italic">No admins granted yet.</div>{% endif %}
+    <form method="POST" action="/empire/admin/grant">
+      <input type="hidden" name="claim_id" value="{{ claim_id }}">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <input class="filter-input" type="text" name="username" placeholder="Player username…" style="max-width:220px;flex:1">
+        <button type="submit" class="ep-btn ep-btn-teal">+ Grant Admin</button>
+      </div>
+    </form>
+  </div>
+  <div class="ep-card">
+    <div class="ep-card-title">ℹ How Auth Works</div>
+    <div style="font-size:13px;color:var(--text-secondary);line-height:1.7">
+      <strong style="color:var(--text-primary)">1.</strong> Member opens this page → clicks <em>Verify Identity</em><br>
+      <strong style="color:var(--text-primary)">2.</strong> They get a code like <code style="color:var(--gold);background:var(--bg-deep);padding:1px 6px;border-radius:3px">A3F92B1C</code><br>
+      <strong style="color:var(--text-primary)">3.</strong> They type <code style="color:var(--gold);background:var(--bg-deep);padding:1px 6px;border-radius:3px">bitjita:auth:A3F92B1C</code> in in-game chat channel 2<br>
+      <strong style="color:var(--text-primary)">4.</strong> Bitjita confirms who they are — no passwords<br>
+      <strong style="color:var(--text-primary)">5.</strong> You enter their username above to grant edit access
+    </div>
+  </div>
+</div>
+</div>{% endif %}
 
 {% endif %}{# end if claim #}
-
 </div><!-- /ep -->
 
 <script>
-// ── Tab routing (hash-based) ───────────────────────────────────────────────
+// ── Tab routing ──────────────────────────────────────────────────────────────
 function epTab(id, btn) {
   document.querySelectorAll('.ep-tab-section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.ep-tab').forEach(b => b.classList.remove('active'));
-  document.getElementById('tab-' + id).classList.add('active');
+  document.getElementById('tab-'+id).classList.add('active');
   btn.classList.add('active');
-  location.hash = 'tab-' + id;
+  location.hash = 'tab-'+id;
 }
-
-// Restore tab from hash on load
-(function() {
-  const hash = location.hash.replace('#', '');
-  if (hash && document.getElementById(hash)) {
-    const btn = document.querySelector(`[data-tab="${hash.replace('tab-','')}"]`);
-    if (btn) epTab(hash.replace('tab-',''), btn);
-    else document.querySelector('.ep-tab')?.click();
-  } else {
-    document.querySelector('.ep-tab')?.click();
-  }
+(function(){
+  const h = location.hash.replace('#','');
+  if(h && document.getElementById(h)){
+    const btn=document.querySelector(`[data-tab="${h.replace('tab-','')}"]`);
+    if(btn) epTab(h.replace('tab-',''),btn); else document.querySelector('.ep-tab')?.click();
+  } else { document.querySelector('.ep-tab')?.click(); }
 })();
 
-// ── Custom goals (AJAX) ───────────────────────────────────────────────────
-const CLAIM_ID = '{{ claim_id }}';
-
-async function addCustomGoal() {
-  const inp = document.getElementById('cg-input');
-  const text = inp.value.trim();
-  if (!text) return;
-
-  const fd = new FormData();
-  fd.append('claim_id', CLAIM_ID);
-  fd.append('text', text);
-
-  const r = await fetch('/empire/goals/custom/add', { method: 'POST', body: fd });
-  if (r.status === 403) { alert('Session expired — please re-verify your identity.'); return; }
-  const data = await r.json();
-  if (data.error) { alert(data.error); return; }
-
-  const list = document.getElementById('custom-goals-list');
-  const div  = document.createElement('div');
-  div.className = 'custom-goal-item';
-  div.id = `cg-${data.id}`;
-  div.innerHTML = `<span style="color:var(--gold)">◆</span><span>${data.text}</span><button class="custom-goal-del" onclick="deleteCustomGoal(${data.id})">×</button>`;
-  list.appendChild(div);
-  inp.value = '';
+// ── Rotating member stats ──────────────────────────────────────────────────
+const TOTAL_SLIDES = 10;
+let currentSlide = 0, rotatorInterval = null;
+function goSlide(n) {
+  document.getElementById('slide-'+currentSlide)?.classList.remove('active');
+  document.querySelectorAll('#rotator-dots > div')[currentSlide].style.background = 'var(--border)';
+  currentSlide = n % TOTAL_SLIDES;
+  document.getElementById('slide-'+currentSlide)?.classList.add('active');
+  document.querySelectorAll('#rotator-dots > div')[currentSlide].style.background = 'var(--gold)';
+  const fill = document.getElementById('rotator-fill');
+  if(fill){ fill.style.transition='none'; fill.style.width='0%'; setTimeout(()=>{ fill.style.transition='width 20s linear'; fill.style.width='100%'; },50); }
 }
-
-async function deleteCustomGoal(id) {
-  const fd = new FormData();
-  fd.append('claim_id', CLAIM_ID);
-  fd.append('goal_id', id);
-
-  const r = await fetch('/empire/goals/custom/delete', { method: 'POST', body: fd });
-  if (r.ok) {
-    const el = document.getElementById(`cg-${id}`);
-    if (el) el.remove();
-  }
+function startRotator() {
+  const fill = document.getElementById('rotator-fill');
+  if(!fill) return;
+  fill.style.width='0%'; setTimeout(()=>{ fill.style.transition='width 20s linear'; fill.style.width='100%'; },100);
+  rotatorInterval = setInterval(()=>{ goSlide(currentSlide+1); }, 20000);
 }
+startRotator();
 
 // ── Member table filter / sort ────────────────────────────────────────────
+const PROF_SKILLS = new Set({{ profession_skills|tojson }});
+const ADV_SKILLS  = new Set({{ adventure_skills|tojson }});
+
 function filterMembers() {
-  const q = (document.getElementById('member-search')?.value || '').toLowerCase();
-  let shown = 0;
+  const q    = (document.getElementById('member-search')?.value||'').toLowerCase();
+  const cat  = document.getElementById('member-cat-filter')?.value||'all';
+  const role = document.getElementById('member-role-filter')?.value||'all';
+  let shown  = 0;
   document.querySelectorAll('#member-tbody tr').forEach(r => {
-    const vis = (r.dataset.name || '').includes(q);
+    const name    = r.dataset.name||'';
+    const officer = r.dataset.officer==='1';
+    const vis = name.includes(q) &&
+      (role==='all'||(role==='officer'&&officer)||(role==='member'&&!officer));
     r.style.display = vis ? '' : 'none';
-    if (vis) shown++;
+    if(vis) shown++;
   });
-  const el = document.getElementById('members-shown');
-  if (el) el.textContent = shown;
+  const el=document.getElementById('members-shown');
+  if(el) el.textContent=shown;
+  // Show/hide skill category columns
+  document.querySelectorAll('.sk-cat-prof').forEach(el => {
+    el.style.display = (cat==='all'||cat==='profession') ? '' : 'none';
+  });
+  document.querySelectorAll('.sk-cat-adv').forEach(el => {
+    el.style.display = (cat==='all'||cat==='adventure') ? '' : 'none';
+  });
 }
 
 function sortMembers() {
-  const key   = document.getElementById('member-sort')?.value || 'total';
+  const key   = document.getElementById('member-sort')?.value||'total';
+  const tbody = document.getElementById('member-tbody');
+  if(!tbody) return;
+  const rows  = Array.from(tbody.querySelectorAll('tr'));
+  rows.sort((a,b)=>{
+    if(key==='name')      return (a.dataset.name||'').localeCompare(b.dataset.name||'');
+    if(key==='total')     return Number(b.dataset.total||0)  - Number(a.dataset.total||0);
+    if(key==='highest')   return Number(b.dataset.highest||0)- Number(a.dataset.highest||0);
+    if(key==='seniority') return (a.dataset.joined||'').localeCompare(b.dataset.joined||'');
+    if(key==='recent')    return (b.dataset.login||'').localeCompare(a.dataset.login||'');
+    return 0;
+  });
+  rows.forEach((r,i)=>{ r.querySelector('td').textContent=i+1; tbody.appendChild(r); });
+}
+
+// ── Column header sort ────────────────────────────────────────────────────
+let _sortCol = null, _sortAsc = true;
+function colSort(col) {
+  if (_sortCol === col) { _sortAsc = !_sortAsc; }
+  else {
+    _sortCol = col;
+    // Names and joined date default ascending; everything else descending (highest first)
+    _sortAsc = (col === 'name' || col === 'joined');
+  }
+  const asc = _sortAsc ? 1 : -1;
   const tbody = document.getElementById('member-tbody');
   if (!tbody) return;
-  const rows  = Array.from(tbody.querySelectorAll('tr'));
+  const rows = Array.from(tbody.querySelectorAll('tr'));
   rows.sort((a, b) => {
-    if (key === 'name') return (a.dataset.name || '').localeCompare(b.dataset.name || '');
-    const av = Number(a.dataset[key] || 0);
-    const bv = Number(b.dataset[key] || 0);
-    return bv - av;
+    switch (col) {
+      case 'name':    return asc * (a.dataset.name||'').localeCompare(b.dataset.name||'');
+      case 'total':   return asc * (Number(a.dataset.total||0)   - Number(b.dataset.total||0));
+      case 'highest': return asc * (Number(a.dataset.highest||0) - Number(b.dataset.highest||0));
+      case 'joined':  return asc * (a.dataset.joined||'').localeCompare(b.dataset.joined||'');
+      case 'login':   return asc * (b.dataset.login||'').localeCompare(a.dataset.login||'');
+      default:
+        if (col.startsWith('sk')) {
+          const sid = col.slice(2);
+          const av = (JSON.parse(a.dataset.skills||'{}')[sid]) || 0;
+          const bv = (JSON.parse(b.dataset.skills||'{}')[sid]) || 0;
+          return asc * (av - bv);
+        }
+        return 0;
+    }
   });
-  rows.forEach((r, i) => {
-    r.querySelector('td').textContent = i + 1;
-    tbody.appendChild(r);
+  rows.forEach((r, i) => { r.querySelector('td').textContent = i + 1; tbody.appendChild(r); });
+  // Update sort indicators
+  document.querySelectorAll('.sort-ind').forEach(el => el.textContent = '');
+  document.querySelectorAll(`.sort-ind[data-col="${col}"]`).forEach(el => {
+    el.textContent = _sortAsc ? '↑' : '↓';
   });
+}
+
+// ── Claim name / ID search ────────────────────────────────────────────────
+let _claimSearchTimer = null;
+function claimSearchDebounce() {
+  const val = (document.getElementById('claim-search-input')?.value || '').trim();
+  clearTimeout(_claimSearchTimer);
+  if (/^\d+$/.test(val)) {
+    const h = document.getElementById('claim-id-hidden');
+    if (h) h.value = val;
+    hideSuggestions();
+    return;
+  }
+  if (val.length < 2) { hideSuggestions(); return; }
+  _claimSearchTimer = setTimeout(async () => {
+    try {
+      const r = await fetch('/empire/api/search_claims?q=' + encodeURIComponent(val));
+      const data = await r.json();
+      showSuggestions(data.claims || []);
+    } catch(e) { hideSuggestions(); }
+  }, 320);
+}
+function showSuggestions(claims) {
+  const box = document.getElementById('claim-suggestions');
+  if (!box) return;
+  if (!claims.length) { hideSuggestions(); return; }
+  box.innerHTML = claims.map(c =>
+    `<div class="claim-sugg" data-id="${escHtml(String(c.id))}" data-name="${escHtml(c.name||'')}" onmousedown="selectClaimEl(this)">` +
+    `<span class="claim-sugg-name">${escHtml(c.name||'(unnamed)')}</span>` +
+    `</div>`
+  ).join('');
+  box.style.display = 'block';
+}
+function selectClaimEl(el) {
+  selectClaim(el.dataset.id, el.dataset.name);
+}
+function hideSuggestions() {
+  const box = document.getElementById('claim-suggestions');
+  if (box) box.style.display = 'none';
+}
+function selectClaim(id, name) {
+  const h = document.getElementById('claim-id-hidden');
+  const inp = document.getElementById('claim-search-input');
+  if (h) h.value = id;
+  if (inp) inp.value = name;
+  hideSuggestions();
+  document.getElementById('claim-form')?.submit();
+}
+function claimFormSubmit() {
+  const val = (document.getElementById('claim-search-input')?.value || '').trim();
+  if (/^\d+$/.test(val)) {
+    const h = document.getElementById('claim-id-hidden');
+    if (h) h.value = val;
+    return true;
+  }
+  const id = (document.getElementById('claim-id-hidden')?.value || '').trim();
+  if (!id) {
+    alert('Please select a claim from the dropdown, or enter a numeric Claim ID directly.');
+    return false;
+  }
+  return true;
+}
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Inventory filter / toggle ─────────────────────────────────────────────
+function filterInventory() {
+  const q      = (document.getElementById('inv-search')?.value||'').toLowerCase();
+  const type   = (document.getElementById('inv-type-filter')?.value||'all').toLowerCase();
+  const rarity = document.getElementById('inv-rarity-filter')?.value||'all';
+  let shown    = 0;
+  document.querySelectorAll('#inv-grid .inv-card').forEach(card => {
+    const name    = card.dataset.name||'';
+    const ctype   = card.dataset.type||'';
+    const rarities= card.dataset.rarities||'';
+    const typeOk  = type==='all' || ctype.includes(type) ||
+                    (type==='storage'&&(ctype.includes('chest')||ctype.includes('storage'))) ||
+                    (type==='market'&&ctype.includes('stall')) ||
+                    (type==='vault'&&ctype.includes('vault'));
+    const rarOk   = rarity==='all' || rarities.includes(rarity);
+    const vis     = name.includes(q) && typeOk && rarOk;
+    card.style.display = vis ? '' : 'none';
+    if(vis) shown++;
+  });
+  const el=document.getElementById('inv-shown');
+  if(el) el.textContent=shown;
+}
+
+function toggleInvCard(idx) {
+  const detail = document.getElementById('inv-detail-'+idx);
+  const card   = document.getElementById('inv-'+idx);
+  if(!detail) return;
+  const open = detail.classList.toggle('show');
+  card.classList.toggle('active', open);
+}
+
+// ── Minimap ───────────────────────────────────────────────────────────────
+{% if layout %}
+(function drawMinimap() {
+  const canvas = document.getElementById('claim-minimap');
+  if(!canvas) return;
+  const layout = {{ layout|tojson }};
+  const meta   = layout.mapMetadata || {};
+  const minX   = meta.minX||0, maxX=meta.maxX||100;
+  const minZ   = meta.minZ||0, maxZ=meta.maxZ||100;
+  const W      = canvas.parentElement.clientWidth || 400;
+  const H      = 220;
+  canvas.width  = W;
+  canvas.height = H;
+  const ctx    = canvas.getContext('2d');
+  const rangeX = maxX-minX||1, rangeZ=maxZ-minZ||1;
+  const pad    = 12;
+  const scaleX = (W-pad*2)/rangeX;
+  const scaleZ = (H-pad*2)/rangeZ;
+  const scale  = Math.min(scaleX,scaleZ);
+
+  function tx(x){ return pad+(x-minX)*scale; }
+  function tz(z){ return pad+(z-minZ)*scale; }
+
+  ctx.fillStyle='#0a0c10';
+  ctx.fillRect(0,0,W,H);
+
+  // Draw claimed tiles
+  if(layout.tiles){
+    ctx.fillStyle='#1a2d1a';
+    layout.tiles.forEach(t=>{
+      const px=tx(t.x), pz=tz(t.z), sz=Math.max(scale*1.8,3);
+      ctx.fillRect(px-sz/2,pz-sz/2,sz,sz);
+    });
+  }
+
+  // Draw buildings
+  const BCOLORS={'storage':'#60a5fa','market':'#3dbdaa','vault':'#9ca3af','crafting':'#f59e0b','hall':'#c8922a','default':'#c8922a'};
+  if(layout.buildings){
+    layout.buildings.forEach(b=>{
+      const col = BCOLORS[b.type]||BCOLORS.default;
+      const px=tx(b.x), pz=tz(b.z), sz=Math.max(scale*2.5,6);
+      ctx.fillStyle=col;
+      ctx.beginPath(); ctx.arc(px,pz,sz/2,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='rgba(255,255,255,.7)';
+      ctx.font=`${Math.max(8,sz*0.7)}px monospace`;
+      ctx.textAlign='center';
+      ctx.fillText(b.name.charAt(0).toUpperCase(),px,pz+3);
+    });
+  }
+
+  // Border
+  ctx.strokeStyle='#2a3a50'; ctx.lineWidth=1;
+  ctx.strokeRect(.5,.5,W-1,H-1);
+
+  // Tooltip on hover
+  canvas.addEventListener('mousemove',e=>{
+    const rect=canvas.getBoundingClientRect();
+    const mx=e.clientX-rect.left, mz=e.clientY-rect.top;
+    if(!layout.buildings) return;
+    const hit=layout.buildings.find(b=>{
+      const px=tx(b.x),pz=tz(b.z);
+      return Math.hypot(mx-px,mz-pz)<10;
+    });
+    canvas.title = hit ? `${hit.name} (${hit.x}, ${hit.z})` : '';
+  });
+})();
+{% endif %}
+
+// ── Custom goals ──────────────────────────────────────────────────────────
+const CLAIM_ID='{{ claim_id }}';
+async function addCustomGoal() {
+  const inp=document.getElementById('cg-input');
+  const text=inp.value.trim(); if(!text) return;
+  const fd=new FormData(); fd.append('claim_id',CLAIM_ID); fd.append('text',text);
+  const r=await fetch('/empire/goals/custom/add',{method:'POST',body:fd});
+  if(r.status===403){alert('Session expired — please re-verify.');return;}
+  const data=await r.json(); if(data.error){alert(data.error);return;}
+  const list=document.getElementById('custom-goals-list');
+  const div=document.createElement('div'); div.className='custom-goal-item'; div.id=`cg-${data.id}`;
+  div.innerHTML=`<span style="color:var(--gold)">◆</span><span>${data.text}</span><button class="custom-goal-del" onclick="deleteCustomGoal(${data.id})">×</button>`;
+  list.appendChild(div); inp.value='';
+}
+async function deleteCustomGoal(id) {
+  const fd=new FormData(); fd.append('claim_id',CLAIM_ID); fd.append('goal_id',id);
+  const r=await fetch('/empire/goals/custom/delete',{method:'POST',body:fd});
+  if(r.ok){ const el=document.getElementById(`cg-${id}`); if(el) el.remove(); }
 }
 </script>
 {% endblock %}
