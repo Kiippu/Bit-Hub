@@ -1,0 +1,462 @@
+{% extends "base.html" %}
+{% block title %}XP Tracker — BitCraft Hub{% endblock %}
+{% block topbar_title %}<span>XP</span> Tracker{% endblock %}
+{% block topbar_right %}
+  <span class="topbar-badge">LIVE</span>
+{% endblock %}
+
+{% block content %}
+<style>
+  .xpt-grid        { display: grid; grid-template-columns: 1fr 340px; gap: 24px; align-items: start; }
+  .xpt-search-bar  { display: flex; gap: 10px; margin-bottom: 24px; }
+  .xpt-input       { flex: 1; background: var(--bg-raised); border: 1px solid var(--border); border-radius: 6px;
+                     padding: 10px 14px; color: var(--text-primary); font-family: inherit; font-size: 15px; }
+  .xpt-input:focus { outline: none; border-color: var(--gold-dim); }
+  .xpt-btn         { background: rgba(200,146,42,0.12); border: 1px solid var(--gold-dim); color: var(--gold);
+                     font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 0.12em; padding: 0 18px;
+                     border-radius: 5px; cursor: pointer; transition: all 0.18s; white-space: nowrap; }
+  .xpt-btn:hover   { background: rgba(200,146,42,0.22); border-color: var(--gold); }
+  .xpt-btn-danger  { background: rgba(180,40,40,0.12); border-color: #6a2222; color: #d45a5a; }
+  .xpt-btn-danger:hover { background: rgba(180,40,40,0.25); border-color: #d45a5a; }
+
+  .search-results  { margin-bottom: 24px; }
+  .search-result-row { display: flex; align-items: center; justify-content: space-between;
+                       padding: 10px 14px; border-bottom: 1px solid var(--border); gap: 12px; }
+  .search-result-row:last-child { border-bottom: none; }
+  .sr-name         { font-weight: 600; color: var(--text-primary); }
+  .sr-meta         { font-size: 13px; color: var(--text-muted); }
+
+  .player-table    { width: 100%; border-collapse: collapse; }
+  .player-table th { font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
+                     color: var(--text-muted); padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+  .player-table td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 15px; vertical-align: middle; }
+  .player-table tr:last-child td { border-bottom: none; }
+  .player-table tr:hover td { background: var(--bg-hover); }
+
+  .pt-name         { color: var(--gold-light); font-weight: 600; text-decoration: none; }
+  .pt-name:hover   { text-decoration: underline; }
+  .pt-empire       { font-size: 13px; color: var(--text-secondary); }
+  .pt-xp           { font-variant-numeric: tabular-nums; color: var(--text-primary); }
+  .pt-snap         { font-size: 13px; color: var(--text-muted); }
+  .pt-actions      { display: flex; gap: 8px; }
+
+  .status-card     { font-size: 14px; }
+  .status-row      { display: flex; justify-content: space-between; padding: 7px 0;
+                     border-bottom: 1px solid var(--border); }
+  .status-row:last-child { border-bottom: none; }
+  .status-label    { color: var(--text-muted); }
+  .status-val      { color: var(--text-primary); font-variant-numeric: tabular-nums; }
+  .status-val.ok   { color: var(--teal-light); }
+
+  .nav-links       { display: flex; gap: 12px; margin-bottom: 28px; flex-wrap: wrap; }
+  .nav-link        { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px;
+                     background: var(--bg-raised); border: 1px solid var(--border); border-radius: 5px;
+                     color: var(--text-secondary); text-decoration: none; font-size: 14px; transition: all 0.18s; }
+  .nav-link:hover  { color: var(--gold-light); border-color: var(--gold-dim); background: var(--bg-hover); }
+
+  .empty-state     { text-align: center; padding: 48px 24px; color: var(--text-muted); font-style: italic; }
+  .badge-empire    { font-size: 11px; background: rgba(61,189,170,0.1); border: 1px solid var(--teal);
+                     color: var(--teal-light); border-radius: 3px; padding: 1px 7px; }
+</style>
+
+<h1 class="page-heading">Experience Tracker</h1>
+<p class="page-subheading">Track and compare player XP gains over time.</p>
+
+<div class="nav-links">
+  <a href="{{ url_for('xp_tracker.leaderboard') }}" class="nav-link">🏆 Top Gainers</a>
+  <a href="{{ url_for('xp_tracker.empire') }}" class="nav-link">⚔ Empire Comparison</a>
+  <a href="{{ url_for('xp_tracker.settlement') }}" class="nav-link">🏰 Settlement Comparison</a>
+</div>
+
+<div class="xpt-grid">
+  <div>
+    <!-- Search & Add -->
+    <div class="card" style="margin-bottom:24px">
+      <div class="card-title">Track a Player</div>
+      <div class="xpt-search-bar">
+        <input id="search-input" class="xpt-input" type="text" placeholder="Search player name…" autocomplete="off" />
+        <button class="xpt-btn" onclick="searchPlayer()">Search</button>
+      </div>
+      <div id="search-results" class="search-results" style="display:none"></div>
+      <div id="search-error" style="display:none;color:#d45a5a;font-size:14px;padding:8px 0"></div>
+    </div>
+
+    <!-- Track Claim Members -->
+    <div class="card" style="margin-bottom:24px">
+      <div class="card-title">Track Claim Members</div>
+      <p style="font-size:13px;color:var(--text-muted);margin:0 0 10px">
+        Search for a claim by name to track all its citizens at once.
+      </p>
+      <div class="xpt-search-bar">
+        <input id="claim-search-input" class="xpt-input" type="text" placeholder="Claim name…" autocomplete="off" />
+        <button class="xpt-btn" onclick="searchClaim()">Search</button>
+      </div>
+      <div id="claim-search-loading" style="display:none;font-size:13px;color:var(--text-muted);padding:6px 0">Searching…</div>
+      <div id="claim-search-error" style="display:none;color:#d45a5a;font-size:13px;padding:6px 0"></div>
+      <!-- Claim picker shown when multiple claims match -->
+      <div id="claim-picker" style="display:none;margin-bottom:12px"></div>
+      <!-- Member results -->
+      <div id="claim-members-results" style="display:none"></div>
+    </div>
+
+    <!-- Tracked Players -->
+    <div class="card">
+      <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+        <span>Tracked Players ({{ players|length }})</span>
+        {% if players %}
+        <button class="xpt-btn" onclick="snapshotNow()" title="Snapshot all players now">⟳ Snapshot Now</button>
+        {% endif %}
+      </div>
+
+      {% if players %}
+      <table class="player-table">
+        <thead>
+          <tr>
+            <th>Player</th>
+            <th>Total XP</th>
+            <th>Last Snapshot</th>
+            <th>Snapshots</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in players %}
+          <tr>
+            <td>
+              <a href="{{ url_for('xp_tracker.player_detail', player_id=p.player_id) }}" class="pt-name">
+                {{ skill_icons.get('', '') }} {{ p.username }}
+              </a>
+              {% if p.empire_name %}
+              <br><span class="pt-empire">
+                <a href="{{ url_for('xp_tracker.empire', empire=p.empire_name) }}" class="badge-empire">{{ p.empire_name }}</a>
+              </span>
+              {% endif %}
+            </td>
+            <td class="pt-xp">
+              {% if p.latest_snapshot %}
+                {{ "{:,}".format(p.latest_snapshot.total_xp) }}
+              {% else %}
+                <span style="color:var(--text-muted)">—</span>
+              {% endif %}
+            </td>
+            <td class="pt-snap">
+              {% if p.latest_snapshot %}
+                <span data-ts="{{ p.latest_snapshot.snapshot_time }}"></span>
+              {% else %}
+                <span style="color:var(--text-muted)">Never</span>
+              {% endif %}
+            </td>
+            <td class="pt-snap">{{ p.snapshot_count }}</td>
+            <td>
+              <div class="pt-actions">
+                <a href="{{ url_for('xp_tracker.player_detail', player_id=p.player_id) }}" class="xpt-btn" style="padding:4px 10px;font-size:10px">View</a>
+                <button class="xpt-btn xpt-btn-danger" style="padding:4px 10px;font-size:10px"
+                        onclick="untrack('{{ p.player_id }}', '{{ p.username }}')">Remove</button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state">
+        No players tracked yet.<br>Search for a player above and click <strong>Track</strong> to get started.
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Right sidebar -->
+  <div>
+    <!-- Poller Status -->
+    <div class="card status-card">
+      <div class="card-title">Poller Status</div>
+      <div class="status-row">
+        <span class="status-label">Scheduler</span>
+        <span class="status-val {% if status.scheduler_running %}ok{% endif %}">
+          {{ 'Running' if status.scheduler_running else 'Stopped' }}
+        </span>
+      </div>
+      <div class="status-row">
+        <span class="status-label">Poll interval</span>
+        <span class="status-val">{{ status.poll_interval_minutes }} min</span>
+      </div>
+      <div class="status-row">
+        <span class="status-label">Next poll in</span>
+        <span class="status-val" id="next-poll-countdown">{{ status.next_poll_in_seconds }}s</span>
+      </div>
+      <div class="status-row">
+        <span class="status-label">Last poll</span>
+        <span class="status-val">
+          {% if status.last_poll_time %}
+            <span data-ts="{{ status.last_poll_time }}"></span>
+          {% else %}
+            Never
+          {% endif %}
+        </span>
+      </div>
+      <div style="margin-top:14px;font-size:12px;color:var(--text-muted);line-height:1.6">
+        Change poll rate via CLI:<br>
+        <code style="color:var(--gold-dim)">flask xp-tracker set-interval &lt;minutes&gt;</code>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast" style="display:none;position:fixed;bottom:28px;right:28px;background:var(--bg-raised);border:1px solid var(--border-glow);
+  color:var(--text-primary);padding:12px 20px;border-radius:6px;font-size:14px;z-index:999;box-shadow:0 4px 20px rgba(0,0,0,0.5)"></div>
+
+<script>
+const TRACK_URL   = "{{ url_for('xp_tracker.api_track') }}";
+const UNTRACK_URL = "{{ url_for('xp_tracker.api_untrack') }}";
+const SNAP_URL    = "{{ url_for('xp_tracker.api_snapshot_now') }}";
+
+// Format relative timestamps
+document.querySelectorAll('[data-ts]').forEach(el => {
+  const ts   = parseInt(el.dataset.ts) * 1000;
+  const diff = Date.now() - ts;
+  const mins = Math.floor(diff / 60000);
+  if (mins < 2)       el.textContent = 'Just now';
+  else if (mins < 60) el.textContent = `${mins}m ago`;
+  else {
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) el.textContent = `${hrs}h ago`;
+    else          el.textContent = new Date(ts).toLocaleDateString();
+  }
+});
+
+// Countdown for next poll
+let countdown = {{ status.next_poll_in_seconds }};
+const countdownEl = document.getElementById('next-poll-countdown');
+setInterval(() => { if (countdown > 0) countdown--; countdownEl.textContent = countdown + 's'; }, 1000);
+
+function toast(msg, isError) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.borderColor = isError ? '#6a2222' : 'var(--border-glow)';
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 3500);
+}
+
+async function searchPlayer() {
+  const query      = document.getElementById('search-input').value.trim();
+  if (!query) return;
+  const resultsDiv = document.getElementById('search-results');
+  const errorDiv   = document.getElementById('search-error');
+
+  resultsDiv.innerHTML = '<div style="padding:10px;color:var(--text-muted)">Searching…</div>';
+  resultsDiv.style.display = 'block';
+  errorDiv.style.display   = 'none';
+
+  const data = await fetch(`/xp-tracker/api/player-search?q=${encodeURIComponent(query)}`)
+    .then(r => r.json())
+    .catch(() => ({ error: 'Network error' }));
+
+  if (data.error) {
+    resultsDiv.style.display = 'none';
+    errorDiv.textContent     = data.error;
+    errorDiv.style.display   = 'block';
+    return;
+  }
+
+  const players = data.players || [];
+  if (!players.length) {
+    resultsDiv.style.display = 'none';
+    errorDiv.textContent     = `No players found matching "${query}".`;
+    errorDiv.style.display   = 'block';
+    return;
+  }
+
+  resultsDiv.innerHTML = players.map(p => `
+    <div class="search-result-row">
+      <div>
+        <div class="sr-name">${p.username}</div>
+        <div class="sr-meta">Level ${p.totalLevel || '?'} &bull; ${(p.totalXP || 0).toLocaleString()} XP</div>
+      </div>
+      <button class="xpt-btn" onclick="trackPlayer('${p.entityId}', '${p.username}')">Track</button>
+    </div>
+  `).join('');
+}
+
+async function trackPlayer(playerId, username) {
+  const res = await fetch(TRACK_URL, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({player_id: playerId, username}),
+  }).then(r => r.json()).catch(() => ({ error: 'Network error' }));
+
+  if (res.error) { toast(res.error, true); return; }
+  toast(`Now tracking ${username}. Snapshot will run on next poll.`);
+  setTimeout(() => location.reload(), 1200);
+}
+
+async function untrack(playerId, username) {
+  if (!confirm(`Stop tracking ${username}? Their snapshot history will be preserved.`)) return;
+  const res = await fetch(UNTRACK_URL, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({player_id: playerId}),
+  }).then(r => r.json()).catch(() => ({ error: 'Network error' }));
+
+  if (res.error) { toast(res.error, true); return; }
+  toast(`Removed ${username} from tracking.`);
+  setTimeout(() => location.reload(), 1000);
+}
+
+async function snapshotNow() {
+  toast('Triggering snapshot… this may take a moment.');
+  const res = await fetch(SNAP_URL, { method: 'POST' })
+    .then(r => r.json()).catch(() => ({ error: 'Network error' }));
+  if (res.error) { toast(res.error, true); return; }
+  toast('Snapshot complete!');
+  setTimeout(() => location.reload(), 1500);
+}
+
+document.getElementById('search-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') searchPlayer();
+});
+
+document.getElementById('claim-search-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') searchClaim();
+});
+
+const CLAIM_SEARCH_URL  = "{{ url_for('xp_tracker.api_claim_search') }}";
+const CLAIM_MEMBERS_URL = "{{ url_for('xp_tracker.api_claim_members') }}";
+
+async function searchClaim() {
+  const q          = document.getElementById('claim-search-input').value.trim();
+  const loadingEl  = document.getElementById('claim-search-loading');
+  const errorEl    = document.getElementById('claim-search-error');
+  const pickerEl   = document.getElementById('claim-picker');
+  const membersEl  = document.getElementById('claim-members-results');
+  if (!q) return;
+
+  loadingEl.style.display = 'block';
+  errorEl.style.display   = 'none';
+  pickerEl.style.display  = 'none';
+  membersEl.style.display = 'none';
+  pickerEl.innerHTML      = '';
+  membersEl.innerHTML     = '';
+
+  const data = await fetch(`${CLAIM_SEARCH_URL}?q=${encodeURIComponent(q)}`)
+    .then(r => r.json())
+    .catch(() => ({ error: 'Network error' }));
+  loadingEl.style.display = 'none';
+
+  if (data.error) { errorEl.textContent = data.error; errorEl.style.display = 'block'; return; }
+  if (!data.claims || !data.claims.length) {
+    errorEl.textContent = `No claims found matching "${q}".`;
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  if (data.claims.length === 1) {
+    loadClaimMembers(data.claims[0].entityId, data.claims[0].name);
+    return;
+  }
+
+  // Multiple matches — show picker
+  pickerEl.innerHTML = `
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">${data.claims.length} claims found — select one:</div>
+    ${data.claims.map(c => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
+        <div>
+          <span style="font-size:13px;color:var(--text-primary);font-weight:600">${c.name}</span>
+          <span style="font-size:12px;color:var(--text-muted)"> — ${c.regionName || ''} · ${c.ownerPlayerUsername || ''}</span>
+        </div>
+        <button class="xpt-btn claim-select-btn" style="padding:3px 10px;font-size:10px"
+                data-id="${c.entityId}" data-name="${c.name.replace(/"/g,'&quot;')}">Select</button>
+      </div>
+    `).join('')}
+  `;
+  pickerEl.querySelectorAll('.claim-select-btn').forEach(btn => {
+    btn.addEventListener('click', () => loadClaimMembers(btn.dataset.id, btn.dataset.name));
+  });
+  pickerEl.style.display = 'block';
+}
+
+async function loadClaimMembers(claimId, claimName) {
+  const loadingEl = document.getElementById('claim-search-loading');
+  const errorEl   = document.getElementById('claim-search-error');
+  const membersEl = document.getElementById('claim-members-results');
+
+  loadingEl.style.display = 'block';
+  errorEl.style.display   = 'none';
+  membersEl.style.display = 'none';
+
+  const data = await fetch(`${CLAIM_MEMBERS_URL}?claim_id=${encodeURIComponent(claimId)}`)
+    .then(r => r.json())
+    .catch(() => ({ error: 'Network error' }));
+  loadingEl.style.display = 'none';
+
+  if (data.error) { errorEl.textContent = data.error; errorEl.style.display = 'block'; return; }
+  if (!data.members || !data.members.length) {
+    errorEl.textContent = `No citizens found for "${claimName}".`;
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  const untrackedCount = data.members.filter(m => !m.is_tracked).length;
+  membersEl.innerHTML = `
+    <div style="font-size:12px;color:var(--text-muted);margin:10px 0 8px">
+      <strong style="color:var(--text-primary)">${claimName}</strong> — ${data.count} citizen(s)
+    </div>
+    ${data.members.map(m => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
+        <span style="font-size:13px;color:var(--text-primary)">${m.username || m.player_id}</span>
+        ${m.is_tracked
+          ? '<span style="font-size:11px;color:var(--teal-light)">✓ Tracked</span>'
+          : `<button class="xpt-btn claim-track-btn" style="padding:3px 10px;font-size:10px"
+                     data-pid="${m.player_id}" data-username="${(m.username||'').replace(/"/g,'&quot;')}">Track</button>`
+        }
+      </div>
+    `).join('')}
+    ${untrackedCount > 0 ? `
+      <button class="xpt-btn" id="track-all-btn" style="width:100%;margin-top:10px;padding:7px 0">
+        Track All Untracked (${untrackedCount})
+      </button>
+    ` : ''}
+  `;
+  membersEl.querySelectorAll('.claim-track-btn').forEach(btn => {
+    btn.addEventListener('click', () => trackClaimMember(btn.dataset.pid, btn.dataset.username, btn));
+  });
+  const trackAllBtn = membersEl.querySelector('#track-all-btn');
+  if (trackAllBtn) {
+    trackAllBtn.addEventListener('click', () => trackAllClaimMembers(data.members));
+  }
+  membersEl.style.display = 'block';
+}
+
+async function trackClaimMember(playerId, username, btn) {
+  btn.disabled = true;
+  btn.textContent = '…';
+  const res = await fetch(TRACK_URL, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({player_id: playerId, username}),
+  }).then(r => r.json()).catch(() => ({ error: 'Network error' }));
+
+  if (res.error) { toast(res.error, true); btn.disabled = false; btn.textContent = 'Track'; return; }
+  btn.replaceWith(Object.assign(document.createElement('span'), {
+    textContent: '✓ Tracked',
+    style: 'font-size:11px;color:var(--teal-light)',
+  }));
+  toast(`Now tracking ${username}.`);
+}
+
+async function trackAllClaimMembers(members) {
+  const untracked = members.filter(m => !m.is_tracked);
+  if (!untracked.length) { toast('All members already tracked.'); return; }
+  toast(`Adding ${untracked.length} member(s) to tracking…`);
+  for (const m of untracked) {
+    await fetch(TRACK_URL, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({player_id: m.player_id, username: m.username}),
+    });
+  }
+  toast(`Added ${untracked.length} member(s). Reloading…`);
+  setTimeout(() => location.reload(), 1500);
+}
+</script>
+{% endblock %}

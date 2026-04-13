@@ -1,0 +1,516 @@
+{% extends "base.html" %}
+{% block title %}Settlement Comparison — XP Tracker — BitCraft Hub{% endblock %}
+{% block topbar_title %}<span>XP</span> Tracker — Settlement{% endblock %}
+
+{% block content %}
+<style>
+  .xpt-back         { display: inline-flex; align-items: center; gap: 6px; color: var(--text-muted);
+                      text-decoration: none; font-size: 13px; margin-bottom: 20px; transition: color 0.15s; }
+  .xpt-back:hover   { color: var(--gold-light); }
+  .xpt-controls     { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 24px; }
+  .xpt-select       { background: var(--bg-raised); border: 1px solid var(--border); border-radius: 5px;
+                      padding: 7px 12px; color: var(--text-primary); font-family: inherit; font-size: 14px; cursor: pointer; }
+  .xpt-select:focus { outline: none; border-color: var(--gold-dim); }
+  .tab-group        { display: flex; gap: 4px; }
+  .tab-btn          { background: var(--bg-raised); border: 1px solid var(--border); border-radius: 4px;
+                      padding: 6px 14px; color: var(--text-secondary); font-family: 'Cinzel', serif;
+                      font-size: 10px; letter-spacing: 0.12em; cursor: pointer; transition: all 0.15s; }
+  .tab-btn.active,
+  .tab-btn:hover    { color: var(--gold-light); border-color: var(--gold-dim); background: rgba(200,146,42,0.08); }
+
+  .chart-card       { padding: 0; overflow: hidden; margin-bottom: 24px; }
+  .chart-header     { padding: 16px 20px 0; display: flex; justify-content: space-between; align-items: center; }
+  .chart-area       { position: relative; height: 400px; padding: 12px 16px 16px; }
+  .chart-empty      { display: flex; align-items: center; justify-content: center; height: 400px;
+                      color: var(--text-muted); font-style: italic; font-size: 15px; flex-direction: column; gap: 12px; }
+
+  .member-toggles   { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .toggle-chip      { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px;
+                      border-radius: 20px; border: 2px solid; cursor: pointer; font-size: 13px;
+                      transition: opacity 0.18s; user-select: none; }
+  .toggle-chip.hidden { opacity: 0.35; }
+
+  .member-table     { width: 100%; border-collapse: collapse; }
+  .member-table th  { font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
+                      color: var(--text-muted); padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+  .member-table td  { padding: 11px 12px; border-bottom: 1px solid var(--border); font-size: 14px; }
+  .member-table tr:last-child td { border-bottom: none; }
+  .member-table tr:hover td { background: var(--bg-hover); }
+  .mt-name          { color: var(--gold-light); text-decoration: none; font-weight: 600; }
+  .mt-name:hover    { text-decoration: underline; }
+
+  .claim-search     { display: flex; gap: 10px; margin-bottom: 24px; }
+  .xpt-input        { flex: 1; background: var(--bg-raised); border: 1px solid var(--border); border-radius: 6px;
+                      padding: 9px 14px; color: var(--text-primary); font-family: inherit; font-size: 15px; }
+  .xpt-input:focus  { outline: none; border-color: var(--gold-dim); }
+  .xpt-btn          { background: rgba(200,146,42,0.12); border: 1px solid var(--gold-dim); color: var(--gold);
+                      font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 0.12em; padding: 0 18px;
+                      border-radius: 5px; cursor: pointer; transition: all 0.18s; white-space: nowrap; }
+  .xpt-btn:hover    { background: rgba(200,146,42,0.22); border-color: var(--gold); }
+  .no-data          { text-align:center; padding:48px; color:var(--text-muted); font-style:italic; }
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+
+<a href="{{ url_for('xp_tracker.index') }}" class="xpt-back">← Back to Tracker</a>
+
+<h1 class="page-heading">Settlement Comparison</h1>
+<p class="page-subheading">Compare XP gains across settlement members on a shared chart.</p>
+
+<div style="display:grid;grid-template-columns:220px 1fr;gap:24px;align-items:start">
+  <!-- Left: settlement selector -->
+  <div>
+    <div class="card" style="padding:16px">
+      <div class="card-title">Select Settlement</div>
+      {% if settlement_names %}
+        {% for name in settlement_names %}
+        <a href="{{ url_for('xp_tracker.settlement', settlement=name, window=window) }}"
+           style="display:block;padding:8px 10px;margin-bottom:4px;border-radius:5px;text-decoration:none;
+                  font-size:14px;border:1px solid {{ 'var(--gold-dim)' if name == settlement_name else 'transparent' }};
+                  background:{{ 'rgba(200,146,42,0.08)' if name == settlement_name else 'transparent' }};
+                  color:{{ 'var(--gold-light)' if name == settlement_name else 'var(--text-secondary)' }};
+                  transition:all 0.15s"
+           onmouseover="this.style.background='var(--bg-hover)';this.style.color='var(--text-primary)'"
+           onmouseout="this.style.background='{{ 'rgba(200,146,42,0.08)' if name == settlement_name else 'transparent' }}'">
+          🏰 {{ name }}
+        </a>
+        {% endfor %}
+      {% else %}
+        <div style="font-size:13px;color:var(--text-muted);font-style:italic">
+          No settlement data yet. Track players and wait for the next poll cycle to populate settlement affiliations.
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Settlement member discovery -->
+    <div class="card" style="padding:16px;margin-top:16px">
+      <div class="card-title">Find Settlement Members</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px">
+        Search for a claim by name and track its citizens.
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <input id="claim-search-input" class="xpt-input" type="text" placeholder="Settlement name…" />
+        <button class="xpt-btn" style="padding:8px 0;width:100%" onclick="searchClaim()">Search</button>
+      </div>
+      <div id="claim-search-loading" style="display:none;font-size:13px;color:var(--text-muted);margin-top:8px">Searching…</div>
+      <div id="claim-search-error" style="display:none;color:#d45a5a;font-size:13px;margin-top:8px"></div>
+      <div id="claim-picker" style="display:none;margin-top:10px"></div>
+      <div id="claim-members-results" style="display:none;margin-top:10px"></div>
+    </div>
+  </div>
+
+  <!-- Right: chart + member list -->
+  <div>
+    {% if settlement_name %}
+    <!-- Controls -->
+    <div class="xpt-controls">
+      <span style="font-size:13px;color:var(--text-muted)">Window:</span>
+      <div class="tab-group">
+        {% for w in time_windows %}
+        <button class="tab-btn {% if w == window %}active{% endif %}"
+                onclick="setWindow('{{ w }}')">{{ w }}</button>
+        {% endfor %}
+      </div>
+      <span style="font-size:13px;color:var(--text-muted);margin-left:8px">Skill:</span>
+      <select class="xpt-select" id="skill-select" onchange="setSkill(this.value)">
+        <option value="" {% if not skill_id %}selected{% endif %}>Total XP</option>
+        {% for skill in skills %}
+        <option value="{{ skill.id }}" {% if skill_id == skill.id|string %}selected{% endif %}>
+          {{ skill_icons.get(skill.name, '') }} {{ skill.name }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Player toggles -->
+    <div class="member-toggles" id="member-toggles">
+      {% for m in settlement_members %}
+      <div class="toggle-chip" id="chip-{{ m.player_id }}"
+           onclick="togglePlayer('{{ m.player_id }}')"
+           style="border-color:#888;color:#e8dcc8">
+        <span class="chip-dot" style="width:10px;height:10px;border-radius:50%;background:#888;display:inline-block"></span>
+        {{ m.username }}
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Chart -->
+    <div class="card chart-card">
+      <div class="chart-header">
+        <div class="card-title">XP Gained — {{ settlement_name }}</div>
+        <span style="font-size:12px;color:var(--text-muted)">Click legend to toggle players</span>
+      </div>
+      <div class="chart-area" id="chart-wrap">
+        <div class="chart-empty" id="chart-empty" style="display:none">
+          <div>Not enough snapshot data for this window.</div>
+          <div style="font-size:13px">Players need at least 2 snapshots each to appear on the chart.</div>
+        </div>
+        <canvas id="settlement-chart"></canvas>
+      </div>
+    </div>
+
+    <!-- Member table -->
+    {% if settlement_members %}
+    <div class="card">
+      <div class="card-title">Members ({{ settlement_members|length }})</div>
+      <table class="member-table">
+        <thead>
+          <tr>
+            <th>Player</th>
+            <th>XP Gained (window)</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="member-tbody">
+          {% for m in settlement_members %}
+          <tr>
+            <td><a href="{{ url_for('xp_tracker.player_detail', player_id=m.player_id) }}" class="mt-name">{{ m.username }}</a></td>
+            <td id="gain-{{ m.player_id }}" style="color:var(--text-muted)">—</td>
+            <td><a href="{{ url_for('xp_tracker.player_detail', player_id=m.player_id) }}"
+                   style="font-size:12px;color:var(--text-secondary);text-decoration:none">View ↗</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="card"><div class="no-data">No tracked players in "{{ settlement_name }}". Add players to tracking and wait for a poll cycle.</div></div>
+    {% endif %}
+
+    {% else %}
+    <!-- No settlement selected -->
+    <div class="card">
+      <div class="no-data">
+        Select a settlement from the left to view the comparison chart.<br>
+        <span style="font-size:13px">Settlement affiliations are detected automatically from tracked player data.</span>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<div id="toast" style="display:none;position:fixed;bottom:28px;right:28px;background:var(--bg-raised);border:1px solid var(--border-glow);
+  color:var(--text-primary);padding:12px 20px;border-radius:6px;font-size:14px;z-index:999;box-shadow:0 4px 20px rgba(0,0,0,0.5)"></div>
+
+<script>
+const SETTLEMENT_NAME = {{ settlement_name | tojson }};
+const TRACK_URL         = "{{ url_for('xp_tracker.api_track') }}";
+const SETTLEMENT_HIST   = "{{ url_for('xp_tracker.api_settlement_history') }}";
+const CLAIM_SEARCH_URL  = "{{ url_for('xp_tracker.api_claim_search') }}";
+const CLAIM_MEMBERS_URL = "{{ url_for('xp_tracker.api_claim_members') }}";
+let   currentWindow     = {{ window | tojson }};
+let   currentSkill      = {{ (skill_id or '') | tojson }};
+let   settlementChart   = null;
+let   hiddenPlayers     = new Set();
+
+const COLOURS = [
+  '#3dbdaa','#c8922a','#7a9cff','#e87a7a','#a0d468',
+  '#f0c060','#d07aee','#60c0f0','#ee9a60','#8acf8a',
+];
+
+function setWindow(w) {
+  currentWindow = w;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.textContent === w));
+  loadChart();
+  updateURL();
+}
+
+function setSkill(sid) {
+  currentSkill = sid;
+  loadChart();
+  updateURL();
+}
+
+function updateURL() {
+  const params = new URLSearchParams({ settlement: SETTLEMENT_NAME, window: currentWindow });
+  if (currentSkill) params.set('skill', currentSkill);
+  history.replaceState({}, '', `?${params}`);
+}
+
+function togglePlayer(pid) {
+  const chip = document.getElementById(`chip-${pid}`);
+  if (hiddenPlayers.has(pid)) {
+    hiddenPlayers.delete(pid);
+    chip.classList.remove('hidden');
+  } else {
+    hiddenPlayers.add(pid);
+    chip.classList.add('hidden');
+  }
+  if (settlementChart) {
+    const idx = settlementChart.data.datasets.findIndex(d => d.playerId === pid);
+    if (idx !== -1) {
+      settlementChart.getDatasetMeta(idx).hidden = hiddenPlayers.has(pid);
+      settlementChart.update();
+    }
+  }
+}
+
+async function loadChart() {
+  if (!SETTLEMENT_NAME) return;
+  const params = new URLSearchParams({ settlement: SETTLEMENT_NAME, window: currentWindow });
+  if (currentSkill) params.set('skill', currentSkill);
+
+  const data = await fetch(`${SETTLEMENT_HIST}?${params}`)
+    .then(r => r.json())
+    .catch(() => null);
+
+  const emptyEl = document.getElementById('chart-empty');
+  const canvas  = document.getElementById('settlement-chart');
+
+  if (!data || !data.players || !data.players.length) {
+    emptyEl.style.display = 'flex';
+    canvas.style.display  = 'none';
+    return;
+  }
+
+  emptyEl.style.display = 'none';
+  canvas.style.display  = 'block';
+
+  renderChart(data.players);
+  updateGainTable(data.players);
+  updateChips(data.players);
+}
+
+function renderChart(players) {
+  if (settlementChart) { settlementChart.destroy(); settlementChart = null; }
+  const ctx = document.getElementById('settlement-chart').getContext('2d');
+
+  const datasets = players.map((p, i) => ({
+    playerId:        p.player_id,
+    label:           p.username,
+    data:            p.labels.map((ts, j) => ({ x: ts, y: p.gains[j] })),
+    borderColor:     COLOURS[i % COLOURS.length],
+    backgroundColor: COLOURS[i % COLOURS.length] + '18',
+    borderWidth:     2,
+    pointRadius:     p.labels.length > 50 ? 0 : 3,
+    pointHoverRadius:5,
+    fill:            false,
+    tension:         0.3,
+    hidden:          hiddenPlayers.has(p.player_id),
+  }));
+
+  settlementChart = new Chart(ctx, {
+    type: 'line',
+    data: { datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          labels: { color: '#8a9ab0', usePointStyle: true, pointStyleWidth: 10, padding: 16 },
+          onClick: (e, item, legend) => {
+            const pid = legend.chart.data.datasets[item.datasetIndex].playerId;
+            togglePlayer(pid);
+          }
+        },
+        tooltip: {
+          backgroundColor: '#1a2230',
+          borderColor: '#2a3a50',
+          borderWidth: 1,
+          titleColor: '#e8dcc8',
+          bodyColor: '#8a9ab0',
+          callbacks: {
+            title: items => new Date(items[0].parsed.x).toLocaleString(),
+            label: item => `${item.dataset.label}: +${item.parsed.y.toLocaleString()} XP`,
+          }
+        },
+      },
+      scales: {
+        x: {
+          type: 'time',
+          time: { tooltipFormat: 'PPp' },
+          grid: { color: '#1a2230' },
+          ticks: { color: '#4a5a6a', maxTicksLimit: 8 },
+        },
+        y: {
+          grid: { color: '#1a2230' },
+          ticks: {
+            color: '#4a5a6a',
+            callback: v => v >= 1e6 ? (v/1e6).toFixed(1)+'M' : v >= 1e3 ? (v/1e3).toFixed(0)+'K' : v,
+          },
+          beginAtZero: true,
+        }
+      }
+    }
+  });
+}
+
+function updateGainTable(players) {
+  players.forEach(p => {
+    const cell = document.getElementById(`gain-${p.player_id}`);
+    if (cell && p.gains.length) {
+      const gain = p.gains[p.gains.length - 1];
+      cell.textContent = '+' + gain.toLocaleString();
+      cell.style.color = gain > 0 ? 'var(--teal-light)' : 'var(--text-muted)';
+    }
+  });
+}
+
+function updateChips(players) {
+  players.forEach((p, i) => {
+    const chip = document.getElementById(`chip-${p.player_id}`);
+    if (chip) {
+      const colour = COLOURS[i % COLOURS.length];
+      chip.style.borderColor = colour;
+      chip.querySelector('.chip-dot').style.background = colour;
+    }
+  });
+}
+
+// Claim member search
+document.getElementById('claim-search-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') searchClaim();
+});
+
+async function searchClaim() {
+  const q         = document.getElementById('claim-search-input').value.trim();
+  const loadingEl = document.getElementById('claim-search-loading');
+  const errorEl   = document.getElementById('claim-search-error');
+  const pickerEl  = document.getElementById('claim-picker');
+  const membersEl = document.getElementById('claim-members-results');
+  if (!q) return;
+
+  loadingEl.style.display = 'block';
+  errorEl.style.display   = 'none';
+  pickerEl.style.display  = 'none';
+  membersEl.style.display = 'none';
+  pickerEl.innerHTML      = '';
+  membersEl.innerHTML     = '';
+
+  const data = await fetch(`${CLAIM_SEARCH_URL}?q=${encodeURIComponent(q)}`)
+    .then(r => r.json())
+    .catch(() => ({ error: 'Network error' }));
+  loadingEl.style.display = 'none';
+
+  if (data.error) { errorEl.textContent = data.error; errorEl.style.display = 'block'; return; }
+  if (!data.claims || !data.claims.length) {
+    errorEl.textContent = `No settlements found matching "${q}".`;
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  if (data.claims.length === 1) {
+    loadClaimMembers(data.claims[0].entityId, data.claims[0].name);
+    return;
+  }
+
+  pickerEl.innerHTML = `
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">${data.claims.length} settlements found — select one:</div>
+    ${data.claims.map(c => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
+        <div>
+          <span style="font-size:13px;color:var(--text-primary);font-weight:600">${c.name}</span>
+          <span style="font-size:12px;color:var(--text-muted)"> — ${c.regionName || ''} · ${c.ownerPlayerUsername || ''}</span>
+        </div>
+        <button class="xpt-btn claim-select-btn" style="padding:3px 10px;font-size:10px"
+                data-id="${c.entityId}" data-name="${c.name.replace(/"/g,'&quot;')}">Select</button>
+      </div>
+    `).join('')}
+  `;
+  pickerEl.querySelectorAll('.claim-select-btn').forEach(btn => {
+    btn.addEventListener('click', () => loadClaimMembers(btn.dataset.id, btn.dataset.name));
+  });
+  pickerEl.style.display = 'block';
+}
+
+async function loadClaimMembers(claimId, claimName) {
+  const loadingEl = document.getElementById('claim-search-loading');
+  const errorEl   = document.getElementById('claim-search-error');
+  const membersEl = document.getElementById('claim-members-results');
+
+  loadingEl.style.display = 'block';
+  errorEl.style.display   = 'none';
+  membersEl.style.display = 'none';
+
+  const data = await fetch(`${CLAIM_MEMBERS_URL}?claim_id=${encodeURIComponent(claimId)}`)
+    .then(r => r.json())
+    .catch(() => ({ error: 'Network error' }));
+  loadingEl.style.display = 'none';
+
+  if (data.error) { errorEl.textContent = data.error; errorEl.style.display = 'block'; return; }
+  if (!data.members || !data.members.length) {
+    errorEl.textContent = `No citizens found for "${claimName}".`;
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  const untrackedCount = data.members.filter(m => !m.is_tracked).length;
+  membersEl.innerHTML = `
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">
+      <strong style="color:var(--text-primary)">${claimName}</strong> — ${data.count} citizen(s)
+    </div>
+    ${data.members.map(m => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
+        <span style="font-size:13px;color:var(--text-primary)">${m.username || m.player_id}</span>
+        ${m.is_tracked
+          ? '<span style="font-size:11px;color:var(--teal-light)">✓ Tracked</span>'
+          : `<button class="xpt-btn claim-track-btn" style="padding:3px 10px;font-size:10px"
+                     data-pid="${m.player_id}" data-username="${(m.username||'').replace(/"/g,'&quot;')}">Track</button>`
+        }
+      </div>
+    `).join('')}
+    ${untrackedCount > 0 ? `
+      <button class="xpt-btn" id="track-all-btn" style="width:100%;margin-top:10px;padding:7px 0">
+        Track All Untracked (${untrackedCount})
+      </button>
+    ` : ''}
+  `;
+  membersEl.querySelectorAll('.claim-track-btn').forEach(btn => {
+    btn.addEventListener('click', () => trackMember(btn.dataset.pid, btn.dataset.username, btn));
+  });
+  const trackAllBtn = membersEl.querySelector('#track-all-btn');
+  if (trackAllBtn) {
+    trackAllBtn.addEventListener('click', () => trackAllMembers(data.members));
+  }
+  membersEl.style.display = 'block';
+}
+
+async function trackMember(playerId, username, btn) {
+  btn.disabled = true;
+  btn.textContent = '…';
+  const res = await fetch(TRACK_URL, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({player_id: playerId, username}),
+  }).then(r => r.json()).catch(() => ({ error: 'Network error' }));
+
+  if (res.error) { toast(res.error, true); btn.disabled = false; btn.textContent = 'Track'; return; }
+  btn.replaceWith(Object.assign(document.createElement('span'), {
+    textContent: '✓ Tracked',
+    style: 'font-size:11px;color:var(--teal-light)',
+  }));
+  toast(`Now tracking ${username}.`);
+}
+
+async function trackAllMembers(members) {
+  const untracked = members.filter(m => !m.is_tracked);
+  if (!untracked.length) { toast('All members already tracked.'); return; }
+  toast(`Adding ${untracked.length} member(s) to tracking…`);
+  for (const m of untracked) {
+    await fetch(TRACK_URL, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({player_id: m.player_id, username: m.username}),
+    });
+  }
+  toast(`Added ${untracked.length} member(s). Reloading…`);
+  setTimeout(() => location.reload(), 1500);
+}
+
+function toast(msg, isError) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.borderColor = isError ? '#6a2222' : 'var(--border-glow)';
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 3500);
+}
+
+{% if settlement_name %}
+loadChart();
+{% endif %}
+</script>
+{% endblock %}
