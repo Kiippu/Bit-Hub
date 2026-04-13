@@ -83,3 +83,11 @@ def price_history(item_type, item_id):
 def regions():
     data, status = _proxy("/api/regions")
     return jsonify(data), status
+
+
+@bp.route("/api/claims")
+def claims():
+    """Claims list — used to populate market selector chips for a region."""
+    params = {k: v for k, v in flask_request.args.items()}
+    data, status = _proxy("/api/claims", params)
+    return jsonify(data), status

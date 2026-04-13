@@ -4,6 +4,8 @@
 {% block head %}
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
 <style>
   /* ── Override hub shell for full-bleed terminal ── */
   .content { padding: 0 !important; overflow: hidden !important; display: flex; flex-direction: column; }
@@ -141,6 +143,94 @@
   .bm-item-name { font-size: 11px; color: var(--bm-text); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .bm-item-cat  { font-size: 9px; color: var(--bm-faint); text-transform: uppercase; letter-spacing: 0.5px; }
   .bm-item-price { font-size: 11px; color: var(--bm-blue); text-align: right; white-space: nowrap; }
+  .bm-item-rarity { font-size: 9px; font-weight: 700; letter-spacing:.05em; white-space:nowrap; }
+  .rc{color:#6b7280;}.ru{color:#4ade80;}.rr{color:#60a5fa;}.re{color:#c084fc;}.rl{color:#fbbf24;}.rm{color:#f87171;}
+  .bm-market-filter-panel {
+    background: var(--bm-bg2); border-bottom: 1px solid var(--bm-bd);
+    flex-shrink: 0;
+  }
+  .bm-filter-row {
+    display: flex; align-items: center; gap: 5px; padding: 5px 8px;
+    min-width: 0; overflow: hidden;
+  }
+  .bm-filter-lbl {
+    font-size: 9px; color: var(--bm-faint); letter-spacing:.12em;
+    text-transform: uppercase; flex-shrink: 0; min-width: 40px;
+  }
+  /* Compact scrollable chip strip — needs explicit min-width:0 to shrink in flex */
+  .bm-chip-strip {
+    display: flex; gap: 3px; min-width: 0; flex: 1;
+    overflow-x: auto; overflow-y: visible;
+    scrollbar-width: thin; scrollbar-color: var(--bm-bd2) transparent;
+    padding-bottom: 2px; cursor: grab;
+  }
+  .bm-chip-strip:active { cursor: grabbing; }
+  .bm-chip-strip::-webkit-scrollbar { height: 2px; }
+  .bm-chip-strip::-webkit-scrollbar-thumb { background: var(--bm-bd2); border-radius: 1px; }
+  .bm-chip {
+    padding: 2px 7px; border: 1px solid var(--bm-bd); border-radius: 3px;
+    font-size: 9px; color: var(--bm-dim); cursor: pointer;
+    transition: all .12s; background: var(--bm-bg3); white-space: nowrap;
+    font-family: var(--mono); user-select: none; flex-shrink: 0;
+  }
+  .bm-chip:hover { border-color: var(--bm-bd2); color: var(--bm-text); }
+  .bm-chip.active { background: var(--bm-blue); border-color: var(--bm-blue); color: #fff; }
+  .bm-chip.region-chip.active { background: var(--bm-acc); border-color: var(--bm-acc); color: #000; }
+  /* Market dropdown */
+  .bm-mkt-dropdown-wrap { position: relative; flex: 1; }
+  .bm-mkt-btn {
+    width: 100%; background: var(--bm-bg3); border: 1px solid var(--bm-bd);
+    color: var(--bm-dim); font-family: var(--mono); font-size: 10px;
+    padding: 3px 8px; border-radius: 3px; cursor: pointer; text-align: left;
+    display: flex; align-items: center; justify-content: space-between;
+    transition: border-color .15s;
+  }
+  .bm-mkt-btn:hover, .bm-mkt-btn.open { border-color: var(--bm-blue); color: var(--bm-text); }
+  .bm-mkt-dropdown {
+    position: absolute; top: 100%; left: 0; right: 0; margin-top: 2px;
+    background: var(--bm-bg3); border: 1px solid var(--bm-bd2);
+    border-radius: 4px; z-index: 200; max-height: 200px; overflow-y: auto;
+    display: none; box-shadow: 0 8px 24px rgba(0,0,0,.6);
+  }
+  .bm-mkt-dropdown.open { display: block; }
+  .bm-mkt-dropdown::-webkit-scrollbar { width: 3px; }
+  .bm-mkt-dropdown::-webkit-scrollbar-thumb { background: var(--bm-bd2); }
+  .bm-mkt-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 5px 10px; font-size: 10px; color: var(--bm-dim);
+    cursor: pointer; transition: background .1s; border-bottom: 1px solid rgba(30,37,53,.5);
+  }
+  .bm-mkt-item:last-child { border-bottom: none; }
+  .bm-mkt-item:hover { background: var(--bm-bg4); color: var(--bm-text); }
+  .bm-mkt-item.checked { color: var(--bm-blue); }
+  .bm-mkt-cb { width: 11px; height: 11px; border: 1px solid var(--bm-bd2); border-radius: 2px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 8px; }
+  .bm-mkt-item.checked .bm-mkt-cb { background: var(--bm-blue); border-color: var(--bm-blue); color: #fff; }
+  .bm-filter-divider { height: 1px; background: var(--bm-bd); }
+  /* Market tag in order book */
+  .bm-mkt-tag {
+    font-size: 9px; color: var(--bm-dim); font-family: var(--mono);
+    cursor: default; text-align: right; padding-right: 2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .bm-mkt-tag:hover { color: var(--bm-text); }
+  /* Fixed JS tooltip — rendered in #bm-tooltip, never clipped */
+  #bm-tooltip {
+    position: fixed; z-index: 9999; pointer-events: none;
+    background: var(--bm-bg4); border: 1px solid var(--bm-bd2);
+    color: var(--bm-text); font-size: 10px; font-family: var(--mono);
+    padding: 3px 8px; border-radius: 3px; white-space: nowrap;
+    box-shadow: 0 4px 12px rgba(0,0,0,.6);
+    opacity: 0; transition: opacity .12s; display: none;
+  }
+  #bm-tooltip.show { opacity: 1; display: block; }
+  .bm-region-filter-row { display:none; }
+  .bm-region-filter-row-old { display:none; }
+  .bm-region-chip { padding:3px 8px; border:1px solid var(--bm-bd); border-radius:3px; font-size:10px; color:var(--bm-dim); cursor:pointer; transition:all .15s; background:var(--bm-bg3); white-space:nowrap; }
+  .bm-region-chip:hover  { border-color:var(--bm-bd2); color:var(--bm-text); }
+  .bm-region-chip.active { background:var(--bm-blue); border-color:var(--bm-blue); color:#fff; }
+  .bm-rarity-filter-row  { display:flex; gap:4px; padding:5px 8px; border-bottom:1px solid var(--bm-bd); flex-wrap:wrap; align-items:center; background:var(--bm-bg2); flex-shrink:0; }
+  .bm-rarity-chip { padding:2px 7px; border-radius:3px; font-size:9px; font-weight:700; cursor:pointer; opacity:.45; transition:opacity .15s; }
+  .bm-rarity-chip.active { opacity:1; outline:1px solid currentColor; }
 
   /* ── CENTER ── */
   #bm-center { display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
@@ -222,13 +312,13 @@
 
   /* Order Book */
   .ob-hdr {
-    display: grid; grid-template-columns: 1fr 1fr 1fr; padding: 6px 12px;
+    display: grid; grid-template-columns: 1fr 1fr 1fr 36px; padding: 6px 12px;
     font-size: 9px; color: var(--bm-faint); text-transform: uppercase; letter-spacing: 0.8px;
     border-bottom: 1px solid var(--bm-bd);
   }
   .ob-row {
-    display: grid; grid-template-columns: 1fr 1fr 1fr; padding: 4px 12px; font-size: 11px;
-    transition: background 0.1s; position: relative; overflow: hidden;
+    display: grid; grid-template-columns: 1fr 1fr 1fr 36px; padding: 4px 12px; font-size: 11px;
+    transition: background 0.1s; position: relative; overflow: visible;
   }
   .ob-row:hover { background: var(--bm-bg3); }
   .ob-row .depth-bar { position: absolute; top:0; bottom:0; opacity:0.08; z-index:0; }
@@ -316,9 +406,6 @@
       </div>
     </div>
     <div class="bm-topbar-right">
-      <select class="bm-region-sel" id="region-select">
-        <option value="">All Regions</option>
-      </select>
       <div class="status-dot" id="status-dot" title="Live"></div>
     </div>
   </div>
@@ -336,6 +423,45 @@
         <button class="bm-filter-tab active" data-filter="all">All</button>
         <button class="bm-filter-tab" data-filter="buy">Buy</button>
         <button class="bm-filter-tab" data-filter="sell">Sell</button>
+      </div>
+      <!-- Market filter panel -->
+      <div class="bm-market-filter-panel" id="bm-market-filter-panel">
+        <!-- Row 1: Regions (scrollable chip strip) -->
+        <div class="bm-filter-row">
+          <span class="bm-filter-lbl">Region</span>
+          <div class="bm-chip-strip" id="bm-region-chips">
+            <!-- Populated by loadRegions() -->
+          </div>
+          <button onclick="clearRegions()" style="font-size:9px;color:var(--bm-faint);background:none;border:none;cursor:pointer;padding:0 2px;flex-shrink:0">✕</button>
+        </div>
+        <!-- Row 2: Market dropdown (only when regions selected) -->
+        <div class="bm-filter-row" id="bm-market-row" style="display:none">
+          <span class="bm-filter-lbl">Market</span>
+          <div class="bm-mkt-dropdown-wrap">
+            <button class="bm-mkt-btn" id="bm-mkt-btn" onclick="toggleMarketDropdown()">
+              <span id="bm-mkt-label">All markets</span>
+              <span>▾</span>
+            </button>
+            <div class="bm-mkt-dropdown" id="bm-mkt-dropdown">
+              <!-- Populated by loadMarketsForRegion() -->
+            </div>
+          </div>
+          <button onclick="clearMarkets()" style="font-size:9px;color:var(--bm-faint);background:none;border:none;cursor:pointer;padding:0 2px;flex-shrink:0">✕</button>
+        </div>
+        <div class="bm-filter-divider"></div>
+        <!-- Row 3: Rarity -->
+        <div class="bm-filter-row" style="padding-bottom:6px">
+          <span class="bm-filter-lbl">Rarity</span>
+          <div class="bm-chip-strip">
+            <span class="bm-chip bm-rarity-chip active rc" data-rarity="">All</span>
+            <span class="bm-chip bm-rarity-chip rc" data-rarity="Common">Common</span>
+            <span class="bm-chip bm-rarity-chip ru" data-rarity="Uncommon">Uncommon</span>
+            <span class="bm-chip bm-rarity-chip rr" data-rarity="Rare">Rare</span>
+            <span class="bm-chip bm-rarity-chip re" data-rarity="Epic">Epic</span>
+            <span class="bm-chip bm-rarity-chip rl" data-rarity="Legendary">Legendary</span>
+            <span class="bm-chip bm-rarity-chip rm" data-rarity="Mythic">Mythic</span>
+          </div>
+        </div>
       </div>
       <div id="bm-item-list">
         <div class="bm-panel-loading"><div class="bm-spinner"></div><span>Fetching market…</span></div>
@@ -360,6 +486,12 @@
         <div class="bm-itabs" id="chart-type-tabs">
           <button class="bm-itab bm-ctab active" data-type="line">Line</button>
           <button class="bm-itab bm-ctab" data-type="bar">Vol</button>
+        </div>
+        <div class="bm-sep"></div>
+        <div class="bm-itabs" id="zoom-tabs">
+          <button class="bm-itab" id="btn-zoom-in"  onclick="chartZoom(0.7)"  title="Zoom in">+</button>
+          <button class="bm-itab" id="btn-zoom-out" onclick="chartZoom(1.4)"  title="Zoom out">−</button>
+          <button class="bm-itab" id="btn-zoom-reset" onclick="chartReset()" title="Reset zoom">↺</button>
         </div>
         <div class="bm-spacer"></div>
         <div class="bm-stat-pill"><span class="lbl">24h avg</span><span class="val" id="v-24h">—</span></div>
@@ -417,6 +549,7 @@
 </div><!-- /bm-root -->
 
 <div id="bm-toast-wrap"></div>
+<div id="bm-tooltip"></div>
 
 <script>
 // ── State ──────────────────────────────────────────────────────────────────
@@ -425,8 +558,25 @@ let selectedItem = null, selectedType = null;
 let currentBucket = '1 hour', currentChartType = 'line';
 let priceChart = null;
 let activeFilter = 'all', activeRightTab = 'orderbook';
-let currentRegion = '';
+let activeRarityFilter = '';
 let lastChartFP = '', lastBookFP = '';
+
+// Region & market multiselect state
+let allRegions = [];          // [{ regionId, regionName }]
+let regionClaims = {};        // regionId -> [{ claimEntityId, claimName }]
+let selectedRegions = new Set();  // set of regionId strings (empty = all)
+let selectedMarkets = new Set();  // set of claimEntityId strings (empty = all)
+
+// ── Rarity helpers ────────────────────────────────────────────────────────
+const RARITY_CLASS = {
+  'common':'rc','uncommon':'ru','rare':'rr','epic':'re','legendary':'rl','mythic':'rm'
+};
+function rarityClass(r) { return RARITY_CLASS[(r||'').toLowerCase()] || 'rc'; }
+function rarityBadge(r) {
+  if (!r) return '';
+  const cls = rarityClass(r);
+  return `<span class="bm-item-rarity ${cls}">${r}</span>`;
+}
 
 // ── API base — calls Flask proxy routes (no Node/CORS issues) ──────────────
 const API = '/bitmarket/api';
@@ -492,28 +642,203 @@ async function init() {
   buildTicker();
 }
 
-// ── Regions ────────────────────────────────────────────────────────────────
+// ── Regions + Markets multiselect ─────────────────────────────────────────
 async function loadRegions() {
   try {
     const data = await apiFetch('/regions');
-    const sel = document.getElementById('region-select');
-    const regions = data.regions || data || [];
+    const regions = data.regions || (Array.isArray(data) ? data : []);
+    allRegions = regions;
+    const wrap = document.getElementById('bm-region-chips');
+    if (!wrap) return;
     regions.forEach(r => {
-      const o = document.createElement('option');
-      o.value = r.regionId; o.textContent = r.regionName || r.name || r.regionId;
-      sel.appendChild(o);
+      const id   = String(r.regionId || r.id);
+      const name = r.regionName || r.name || id;
+      const chip = document.createElement('div');
+      chip.className = 'bm-chip region-chip';
+      chip.dataset.regionId = id;
+      chip.textContent = name;
+      chip.addEventListener('click', () => toggleRegion(chip, id));
+      wrap.appendChild(chip);
     });
-    sel.addEventListener('change', () => {
-      currentRegion = sel.value;
-      if (selectedItem) loadPriceHistory(selectedItem, selectedType, currentBucket);
-    });
-  } catch(e) { /* regions are optional */ }
+  } catch(e) { /* optional */ }
+}
+
+function toggleRegion(chip, regionId) {
+  chip.classList.toggle('active');
+  if (chip.classList.contains('active')) {
+    selectedRegions.add(regionId);
+  } else {
+    selectedRegions.delete(regionId);
+    delete regionClaims[regionId]; // force refetch next time
+  }
+  if (selectedRegions.size > 0) {
+    // Reload markets for all selected regions combined
+    rebuildMarketsForSelectedRegions();
+  } else {
+    selectedMarkets.clear();
+    document.getElementById('bm-mkt-dropdown').innerHTML = '';
+    document.getElementById('bm-market-row').style.display = 'none';
+  }
+  applyMarketFilter();
+}
+
+async function rebuildMarketsForSelectedRegions() {
+  // Fetch claims for all selected regions in parallel, merge, rebuild dropdown
+  const fetches = [...selectedRegions].map(rid => {
+    if (regionClaims[rid]) return Promise.resolve(regionClaims[rid]);
+    return apiFetch('/claims', { regionId: rid, limit: 200 })
+      .then(d => { const c=(d.claims||d||[]).filter(x=>x.entityId); regionClaims[rid]=c; return c; })
+      .catch(() => []);
+  });
+  const results = await Promise.all(fetches);
+  let allClaims = results.flat();
+  // Deduplicate
+  const seen = new Set();
+  allClaims = allClaims.filter(c => { const k=String(c.entityId); if(seen.has(k)) return false; seen.add(k); return true; });
+
+  // If item selected, filter to only claims with orders for it
+  if (selectedItem && allClaims.length) {
+    try {
+      const params = {};
+      if (selectedRegions.size === 1) params.regionId = [...selectedRegions][0];
+      const od = await apiFetch(`/market/${selectedType}/${selectedItem}`, params);
+      const active = new Set([...(od.sellOrders||[]),...(od.buyOrders||[])].map(o=>String(o.claimEntityId)).filter(Boolean));
+      if (active.size) allClaims = allClaims.filter(c => active.has(String(c.entityId)));
+    } catch(e) {}
+  }
+  rebuildMarketDropdown(allClaims);
+}
+
+async function loadMarketsForRegion(regionId) {
+  try {
+    let claims = regionClaims[regionId];
+    if (!claims) {
+      // Fetch claims in this region; if an item is selected, filter to only
+      // claims that have orders for that item via the market endpoint
+      const params = { regionId, limit: 200 };
+      const data   = await apiFetch('/claims', params);
+      claims = (data.claims || data || []).filter(c => c.entityId);
+      regionClaims[regionId] = claims;
+    }
+
+    // If an item is selected, also fetch its order book to find which claims
+    // actually have active orders — filter the dropdown to those
+    let activeClaims = new Set();
+    if (selectedItem) {
+      try {
+        const od = await apiFetch(`/market/${selectedType}/${selectedItem}`, { regionId });
+        const orders = [...(od.sellOrders||[]), ...(od.buyOrders||[])];
+        orders.forEach(o => { if (o.claimEntityId) activeClaims.add(String(o.claimEntityId)); });
+      } catch(e) { /* fall back to all claims */ }
+    }
+
+    const filtered = (activeClaims.size > 0)
+      ? claims.filter(c => activeClaims.has(String(c.entityId)))
+      : claims;
+
+    rebuildMarketDropdown(filtered);
+  } catch(e) { dbg('loadMarketsForRegion error', e.message); }
+}
+
+function rebuildMarketDropdown(claims) {
+  const row      = document.getElementById('bm-market-row');
+  const dropdown = document.getElementById('bm-mkt-dropdown');
+  if (!claims.length) { row.style.display = 'none'; return; }
+  row.style.display = '';
+  // Preserve existing selections
+  dropdown.innerHTML = claims.map(c => {
+    const cid  = String(c.entityId);
+    const name = c.name || cid;
+    const on   = selectedMarkets.has(cid);
+    return `<div class="bm-mkt-item ${on?'checked':''}" data-claim-id="${cid}" onclick="toggleMarketItem(this,'${cid}')">
+      <div class="bm-mkt-cb">${on?'✓':''}</div>
+      <span>${name}</span>
+    </div>`;
+  }).join('');
+  updateMarketLabel();
+}
+
+function toggleMarketDropdown() {
+  const dd  = document.getElementById('bm-mkt-dropdown');
+  const btn = document.getElementById('bm-mkt-btn');
+  const open = dd.classList.toggle('open');
+  btn.classList.toggle('open', open);
+  if (open) {
+    // Close on outside click
+    setTimeout(() => document.addEventListener('click', closeMarketDropdown, {once:true}), 0);
+  }
+}
+
+function closeMarketDropdown(e) {
+  const wrap = document.getElementById('bm-mkt-dropdown')?.closest('.bm-mkt-dropdown-wrap');
+  if (wrap && wrap.contains(e.target)) return;
+  document.getElementById('bm-mkt-dropdown')?.classList.remove('open');
+  document.getElementById('bm-mkt-btn')?.classList.remove('open');
+}
+
+function toggleMarketItem(el, claimId) {
+  el.classList.toggle('checked');
+  const cb = el.querySelector('.bm-mkt-cb');
+  if (el.classList.contains('checked')) {
+    selectedMarkets.add(claimId);
+    cb.textContent = '✓';
+  } else {
+    selectedMarkets.delete(claimId);
+    cb.textContent = '';
+  }
+  updateMarketLabel();
+  applyMarketFilter();
+}
+
+function updateMarketLabel() {
+  const label = document.getElementById('bm-mkt-label');
+  if (!label) return;
+  if (selectedMarkets.size === 0) label.textContent = 'All markets';
+  else if (selectedMarkets.size === 1) {
+    const el = document.querySelector(`#bm-mkt-dropdown .bm-mkt-item.checked span`);
+    label.textContent = el ? el.textContent : `1 market`;
+  } else label.textContent = `${selectedMarkets.size} markets selected`;
+}
+
+function clearRegions() {
+  selectedRegions.clear(); selectedMarkets.clear();
+  document.querySelectorAll('#bm-region-chips .bm-chip').forEach(c => c.classList.remove('active'));
+  document.getElementById('bm-mkt-dropdown').innerHTML = '';
+  document.getElementById('bm-market-row').style.display = 'none';
+  applyMarketFilter();
+}
+
+function clearMarkets() {
+  selectedMarkets.clear();
+  document.querySelectorAll('#bm-mkt-dropdown .bm-mkt-item').forEach(el => {
+    el.classList.remove('checked');
+    el.querySelector('.bm-mkt-cb').textContent = '';
+  });
+  updateMarketLabel();
+  applyMarketFilter();
+}
+
+function applyMarketFilter() {
+  // Reload item list & chart with new filters
+  loadMarket();
+  if (selectedItem) {
+    loadPriceHistory(selectedItem, selectedType, currentBucket);
+    if (activeRightTab === 'orderbook') loadOrderBook(selectedItem, selectedType);
+  }
+}
+
+// Build query params from region/market selections
+function getMarketParams() {
+  const params = {};
+  if (selectedRegions.size === 1) params.regionId = [...selectedRegions][0];
+  if (selectedMarkets.size === 1) params.claimEntityId = [...selectedMarkets][0];
+  return params;
 }
 
 // ── Market item list ───────────────────────────────────────────────────────
 async function loadMarket() {
   try {
-    const params = {};
+    const params = { ...getMarketParams() };
     if (activeFilter === 'sell') params.hasSellOrders = true;
     if (activeFilter === 'buy')  params.hasBuyOrders  = true;
     if (activeFilter === 'all')  params.hasOrders      = true;
@@ -548,7 +873,16 @@ async function loadMarket() {
 
 function filterItems(q = '') {
   const ql = q.toLowerCase();
-  filteredItems = allItems.filter(i => (i.name || i.itemName || '').toLowerCase().includes(ql));
+  filteredItems = allItems.filter(i => {
+    const name = (i.name || i.itemName || '').toLowerCase();
+    if (!name.includes(ql)) return false;
+    // Rarity filter
+    if (activeRarityFilter) {
+      const iRarity = i.rarityStr || i.rarity_str || i.rarity || '';
+      if (String(iRarity).toLowerCase() !== activeRarityFilter.toLowerCase()) return false;
+    }
+    return true;
+  });
   renderItemList();
 }
 
@@ -556,21 +890,30 @@ function renderItemList() {
   const list = document.getElementById('bm-item-list');
   if (!filteredItems.length) { list.innerHTML = '<div class="bm-panel-loading" style="color:var(--bm-dim)">No items found</div>'; return; }
   list.innerHTML = filteredItems.map((item, idx) => {
-    const name = item.name || item.itemName || 'Unknown';
-    const cat  = item.category || item.tag || item._type || '';
-    const p    = item.lowestSellPrice ?? item.marketStats?.lowestSell ?? 0;
-    const bp   = item.highestBuyPrice ?? item.marketStats?.highestBuy ?? 0;
-    const dp   = p > 0 ? p : bp;
-    const isAct = selectedItem === item.id && selectedType === item._type;
+    const name    = item.name || item.itemName || 'Unknown';
+    const cat     = item.category || item.tag || item._type || '';
+    const rarity  = item.rarityStr || item.rarity_str || '';
+    const tier    = item.tier ? `T${item.tier}` : '';
+    const p       = item.lowestSellPrice ?? item.marketStats?.lowestSell ?? 0;
+    const bp      = item.highestBuyPrice ?? item.marketStats?.highestBuy ?? 0;
+    const dp      = p > 0 ? p : bp;
+    const isAct   = selectedItem === item.id && selectedType === item._type;
+    const rcls    = rarityClass(rarity);
+    // iconAssetName already contains the full path like "GeneratedIcons/Items/FishFillet"
+    // Just append .webp — never prepend extra path segments
     const iconUrl = item.iconAssetName
-      ? `https://bitjita.com/static/items/${item.iconAssetName.split('/').map(encodeURIComponent).join('/')}.webp`
+      ? `https://bitjita.com/${item.iconAssetName}.webp`
       : null;
     const icon = iconUrl
       ? `<img class="bm-icon" src="${iconUrl}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" loading="lazy"><div class="bm-icon-fb" style="display:none">${name.charAt(0)}</div>`
       : `<div class="bm-icon-fb">${name.charAt(0)}</div>`;
-    return `<div class="bm-item-row ${isAct?'active':''}" data-idx="${idx}" onclick="selectItem(${idx})">
+    const rarityTag = rarity ? `<span class="bm-item-rarity ${rcls}" style="font-size:9px">${rarity}${tier?' · '+tier:''}</span>` : (tier ? `<span style="font-size:9px;color:var(--bm-faint)">${tier}</span>` : '');
+    return `<div class="bm-item-row ${isAct?'active':''}" data-idx="${idx}" data-rarity="${rarity}" onclick="selectItem(${idx})">
       <div class="bm-icon-wrap">${icon}</div>
-      <div><div class="bm-item-name">${name}</div><div class="bm-item-cat">${cat}</div></div>
+      <div style="min-width:0;flex:1">
+        <div class="bm-item-name">${name}</div>
+        <div style="display:flex;align-items:center;gap:5px;margin-top:1px">${rarityTag}<span class="bm-item-cat" style="margin-top:0">${cat}</span></div>
+      </div>
       <div class="bm-item-price">${dp>0?fmt(dp):'—'}</div>
     </div>`;
   }).join('');
@@ -590,6 +933,9 @@ async function selectItem(idx) {
   document.getElementById('bm-item-chg').textContent = '';
   document.querySelectorAll('.bm-item-row').forEach((r, i) => r.classList.toggle('active', i === idx));
 
+  // Refresh market dropdown to show only markets selling this item
+  if (selectedRegions.size > 0) rebuildMarketsForSelectedRegions();
+
   await Promise.all([
     loadPriceHistory(item.id, item._type, currentBucket),
     loadOrderBook(item.id, item._type),
@@ -604,8 +950,7 @@ async function loadPriceHistory(itemId, type, bucket) {
   loading.classList.remove('hidden');
   canvas.style.display = 'none';
   try {
-    const params = { bucket, limit: 500 };
-    if (currentRegion) params.regionId = currentRegion;
+    const params = { bucket, limit: 1000, ...getMarketParams() };
     const data = await apiFetch(`/market/${type}s/${itemId}/price-history`, params);
     const pd = data.priceData || [];
     const st = data.priceStats || {};
@@ -676,6 +1021,18 @@ function renderChart(labels, prices, volumes) {
       interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: { display: false },
+        zoom: {
+          zoom: {
+            wheel: { enabled: true },
+            pinch: { enabled: true },
+            mode: 'x',
+          },
+          pan: {
+            enabled: true,
+            mode: 'x',
+          },
+          limits: { x: { minRange: 3 } },
+        },
         tooltip: {
           backgroundColor: '#141820', borderColor: '#1e2535', borderWidth: 1,
           titleColor: '#5a6a85', bodyColor: '#c8d4e8',
@@ -685,7 +1042,11 @@ function renderChart(labels, prices, volumes) {
         }
       },
       scales: {
-        x: { ticks: { color:'#2e3d55', font:{family:'JetBrains Mono',size:9}, maxTicksLimit:8, maxRotation:0 }, grid:{color:'rgba(30,37,53,0.5)'}, border:{color:'rgba(30,37,53,0.5)'} },
+        x: {
+            ticks: { color:'#2e3d55', font:{family:'JetBrains Mono',size:9}, maxTicksLimit:12, maxRotation:0,
+              autoSkip: true, autoSkipPadding: 16 },
+            grid:{color:'rgba(30,37,53,0.5)'}, border:{color:'rgba(30,37,53,0.5)'}
+          },
         y: { position:'right', ticks:{color:'#5a6a85',font:{family:'JetBrains Mono',size:10},callback:v=>fmt(v)}, grid:{color:'rgba(30,37,53,0.4)'}, border:{color:'rgba(30,37,53,0.4)'} }
       }
     }
@@ -698,25 +1059,33 @@ async function loadOrderBook(itemId, type) {
   const sec = document.getElementById('section-orderbook');
   sec.innerHTML = '<div class="bm-panel-loading"><div class="bm-spinner"></div></div>';
   try {
-    const data  = await apiFetch(`/market/${type}/${itemId}`);
+    const obParams = getMarketParams();
+    const data  = await apiFetch(`/market/${type}/${itemId}`, obParams);
     const first = data.sellOrders?.[0] || data.buyOrders?.[0];
     if (first) dbg('order[0] raw', first);
 
     const st    = data.stats || {};
-    const sells = (data.sellOrders || []).slice(0,15).sort((a,b) => price(a)-price(b));
-    const buys  = (data.buyOrders  || []).slice(0,15).sort((a,b) => price(b)-price(a));
+    const sells = (data.sellOrders || []).slice(0,25).sort((a,b) => price(a)-price(b));
+    const buys  = (data.buyOrders  || []).slice(0,25).sort((a,b) => price(b)-price(a));
     const bSell = sells.length ? price(sells[0]) : (st.lowestSell ?? 0);
     const bBuy  = buys.length  ? price(buys[0])  : (st.highestBuy ?? 0);
     const spread= (bSell && bBuy) ? bSell - bBuy : (st.orderBookSpread ?? 0);
     const maxQ  = Math.max(...sells.map(qty), ...buys.map(qty), 1);
 
-    const hdr    = `<div class="ob-hdr"><span>Price</span><span style="text-align:center">Qty</span><span style="text-align:right">Total</span></div>`;
+    function mktTag(o) {
+      const name = o.claimName || o.settlementName || o.regionName || '';
+      if (!name) return '<span></span>';
+      const acronym = name.split(/[^a-zA-Z0-9]+/).filter(Boolean).map(w=>w[0]).join('').toUpperCase().slice(0,4);
+      return `<span class="bm-mkt-tag" data-tip="${name}" onmouseenter="showTip(event,'${name.replace(/'/g,"\'")}')" onmouseleave="hideTip()">${acronym}</span>`;
+    }
+
+    const hdr    = `<div class="ob-hdr"><span>Price</span><span style="text-align:center">Qty</span><span style="text-align:right">Total</span><span style="text-align:right;font-size:9px">Mkt</span></div>`;
     const sellH  = sells.length
-      ? sells.map(o => { const p=price(o),q=qty(o),w=Math.round((q/maxQ)*100); return `<div class="ob-row sell"><div class="depth-bar" style="width:${w}%"></div><span class="cp">${fmt(p)}</span><span class="cq">${fmtInt(q)}</span><span class="ct">${fmt(p*q)}</span></div>`; }).join('')
+      ? sells.map(o => { const p=price(o),q=qty(o),w=Math.round((q/maxQ)*100); return `<div class="ob-row sell"><div class="depth-bar" style="width:${w}%"></div><span class="cp">${fmt(p)}</span><span class="cq">${fmtInt(q)}</span><span class="ct">${fmt(p*q)}</span>${mktTag(o)}</div>`; }).join('')
       : `<div style="padding:8px;font-size:10px;color:var(--bm-faint);text-align:center">No sell orders</div>`;
     const spreH  = `<div class="ob-spread">Spread <span class="sv">${spread>0?fmt(spread):'—'}</span>${bSell&&bBuy?`<span style="color:var(--bm-faint)">(${((spread/bSell)*100).toFixed(2)}%)</span>`:''} &nbsp;·&nbsp; S:${st.sellOrderCount??0} B:${st.buyOrderCount??0}</div>`;
     const buyH   = buys.length
-      ? buys.map(o => { const p=price(o),q=qty(o),w=Math.round((q/maxQ)*100); return `<div class="ob-row buy"><div class="depth-bar" style="width:${w}%"></div><span class="cp">${fmt(p)}</span><span class="cq">${fmtInt(q)}</span><span class="ct">${fmt(p*q)}</span></div>`; }).join('')
+      ? buys.map(o => { const p=price(o),q=qty(o),w=Math.round((q/maxQ)*100); return `<div class="ob-row buy"><div class="depth-bar" style="width:${w}%"></div><span class="cp">${fmt(p)}</span><span class="cq">${fmtInt(q)}</span><span class="ct">${fmt(p*q)}</span>${mktTag(o)}</div>`; }).join('')
       : `<div style="padding:8px;font-size:10px;color:var(--bm-faint);text-align:center">No buy orders</div>`;
     sec.innerHTML = hdr + sellH + spreH + buyH;
   } catch(e) {
@@ -785,12 +1154,53 @@ function buildTicker() {
   }).join('');
 }
 
+// ── Tooltip helpers ───────────────────────────────────────────────────────
+const _tip = () => document.getElementById('bm-tooltip');
+function showTip(e, text) {
+  const t = _tip(); if (!t) return;
+  t.textContent = text;
+  t.classList.add('show');
+  moveTip(e);
+}
+function moveTip(e) {
+  const t = _tip(); if (!t) return;
+  const x = e.clientX + 12, y = e.clientY + 12;
+  const tw = t.offsetWidth, th = t.offsetHeight;
+  t.style.left = (x + tw > window.innerWidth  ? x - tw - 20 : x) + 'px';
+  t.style.top  = (y + th > window.innerHeight ? y - th - 20 : y) + 'px';
+}
+function hideTip() {
+  const t = _tip(); if (t) t.classList.remove('show');
+}
+document.addEventListener('mousemove', e => { if (_tip()?.classList.contains('show')) moveTip(e); });
+
+// ── Drag-to-scroll chip strips ────────────────────────────────────────────
+document.querySelectorAll('.bm-chip-strip').forEach(strip => {
+  let isDown = false, startX, scrollLeft;
+  strip.addEventListener('mousedown', e => {
+    isDown = true; startX = e.pageX - strip.offsetLeft; scrollLeft = strip.scrollLeft;
+  });
+  strip.addEventListener('mouseleave', () => isDown = false);
+  strip.addEventListener('mouseup', () => isDown = false);
+  strip.addEventListener('mousemove', e => {
+    if (!isDown) return; e.preventDefault();
+    strip.scrollLeft = scrollLeft - (e.pageX - strip.offsetLeft - startX);
+  });
+});
+
+// ── Chart zoom helpers ────────────────────────────────────────────────────
+function chartZoom(factor) {
+  if (priceChart) priceChart.zoom(factor);
+}
+function chartReset() {
+  if (priceChart) priceChart.resetZoom();
+}
+
 // ── Smart auto-refresh ─────────────────────────────────────────────────────
 async function smartRefreshChart() {
   if (!selectedItem) return;
   try {
-    const params = { bucket: currentBucket, limit: 500 };
-    if (currentRegion) params.regionId = currentRegion;
+    const params = { bucket: currentBucket, limit: 1000, ...getMarketParams() };
     const data = await apiFetch(`/market/${selectedType}s/${selectedItem}/price-history`, params);
     const f = fp(data.priceData || []);
     if (f === lastChartFP) return;
@@ -816,6 +1226,24 @@ setInterval(() => { loadMarket(); smartRefreshChart(); smartRefreshBook(); }, 60
 
 // ── Event listeners ────────────────────────────────────────────────────────
 document.getElementById('bm-search').addEventListener('input', e => filterItems(e.target.value));
+
+// Rarity chip listeners
+document.querySelectorAll('.bm-rarity-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('.bm-rarity-chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    activeRarityFilter = chip.dataset.rarity || '';
+    filterItems(document.getElementById('bm-search')?.value || '');
+  });
+});
+
+// Zoom button active state
+document.querySelectorAll('#zoom-tabs .bm-itab').forEach(btn => {
+  btn.addEventListener('mousedown', () => {
+    btn.style.color = 'var(--bm-acc)';
+    setTimeout(() => btn.style.color = '', 200);
+  });
+});
 
 document.querySelectorAll('.bm-filter-tab').forEach(btn => btn.addEventListener('click', () => {
   document.querySelectorAll('.bm-filter-tab').forEach(b => b.classList.remove('active'));
