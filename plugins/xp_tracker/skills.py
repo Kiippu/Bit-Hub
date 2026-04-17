@@ -79,5 +79,5 @@ def xp_to_level(xp):
     xp_next   = XP_PER_LEVEL[level + 1] if level + 1 < len(XP_PER_LEVEL) else XP_PER_LEVEL[-1]
     xp_into   = xp - xp_this
     xp_needed = xp_next - xp_this
-    pct       = round((xp_into / xp_needed * 100), 1) if xp_needed > 0 else 100.0
+    pct       = min(100.0, round((xp_into / xp_needed * 100), 1)) if xp_needed > 0 else 100.0
     return level, xp_into, xp_needed, pct
