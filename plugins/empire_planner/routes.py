@@ -49,6 +49,7 @@ SKILL_COLORS = {
     21: {"hbg":"rgba(50,60,170,.28)",   "cbg":"rgba(50,60,170,.10)",   "txt":"#8090d0"},
 }
 
+
 # ── Server-side superadmins ───────────────────────────────────────────────────
 # These usernames always have full admin access on every claim.
 # Never sent to the frontend — checked server-side only.

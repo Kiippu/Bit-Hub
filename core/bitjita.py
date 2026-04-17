@@ -25,12 +25,16 @@ HEADERS = {
 
 
 def _get(endpoint, params=None):
-    """Internal GET helper. Returns parsed JSON or None on failure."""
+    """Internal GET helper. Returns parsed JSON, {"__http_error__": status} on
+    HTTP error (4xx/5xx), or None on network/connection failure."""
     try:
         url = f"{BASE_URL}{endpoint}"
         resp = requests.get(url, params=params, headers=HEADERS, timeout=TIMEOUT)
         resp.raise_for_status()
         return resp.json()
+    except requests.exceptions.HTTPError as e:
+        print(f"[BitjitaAPI] Error fetching {endpoint}: {e}")
+        return {"__http_error__": e.response.status_code}
     except requests.exceptions.RequestException as e:
         print(f"[BitjitaAPI] Error fetching {endpoint}: {e}")
         return None
@@ -38,13 +42,13 @@ def _get(endpoint, params=None):
 
 # ── PLAYERS ──────────────────────────────────────────────────────────────────
 
-def search_players(query, limit=20):
+def search_players(query):
     """
-    GET /api/players?search=<query>&limit=<limit>
-    Returns: { players: [...], count, ... }
-    Each player: entityId, username, totalLevel, totalXP, highestLevel
+    GET /api/players?q=<query>
+    Returns: { players: [...], total, ... }
+    Each player: entityId, username, signedIn, timePlayed, timeSignedIn, createdAt, updatedAt
     """
-    return _get("/api/players", params={"search": query, "limit": limit})
+    return _get("/api/players", params={"q": query})
 
 
 def get_player(entity_id):
@@ -169,7 +173,7 @@ def get_claims(search=None, sort="supplies", limit=50):
     """
     params = {"sort": sort, "limit": limit}
     if search:
-        params["search"] = search
+        params["q"] = search
     return _get("/api/claims", params=params)
 
 
@@ -186,6 +190,7 @@ def get_claim_inventories(entity_id):
 def get_claim_citizens(entity_id):
     """GET /api/claims/<entityId>/citizens"""
     return _get(f"/api/claims/{entity_id}/citizens")
+
 
 
 # ── ITEMS ────────────────────────────────────────────────────────────────────

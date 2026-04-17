@@ -1,0 +1,10 @@
+{
+  "id": "market",
+  "name": "Market Browser",
+  "description": "Browse and search BitCraft trade listings pulled live from the Bitjita API.",
+  "icon": "🏪",
+  "author": "Hub Core",
+  "route_prefix": "/market",
+  "tag": "LIVE",
+  "version": "1.0"
+}
