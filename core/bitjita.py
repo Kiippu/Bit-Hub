@@ -183,6 +183,11 @@ def get_claim_inventories(entity_id):
     return _get(f"/api/claims/{entity_id}/inventories")
 
 
+def get_claim_citizens(entity_id):
+    """GET /api/claims/<entityId>/citizens"""
+    return _get(f"/api/claims/{entity_id}/citizens")
+
+
 # ── ITEMS ────────────────────────────────────────────────────────────────────
 
 def get_item(item_id):
