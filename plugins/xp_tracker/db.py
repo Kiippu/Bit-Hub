@@ -86,13 +86,13 @@ def set_config(key, value):
 
 # ── Tracked players ───────────────────────────────────────────────────────────
 
-def add_tracked_player(player_id, username, empire_id=None, empire_name=None):
+def add_tracked_player(player_id, username, empire_id=None, empire_name=None, claim_id=None, claim_name=None):
     with _conn() as c:
         c.execute(
-            """INSERT INTO tracked_players (player_id, username, empire_id, empire_name, added_at)
-               VALUES (?,?,?,?,?)
+            """INSERT INTO tracked_players (player_id, username, empire_id, empire_name, claim_id, claim_name, added_at)
+               VALUES (?,?,?,?,?,?,?)
                ON CONFLICT(player_id) DO UPDATE SET username=excluded.username""",
-            (player_id, username, empire_id, empire_name, int(time.time()))
+            (player_id, username, empire_id, empire_name, claim_id, claim_name, int(time.time()))
         )
 
 

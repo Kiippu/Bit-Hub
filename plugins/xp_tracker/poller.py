@@ -15,17 +15,17 @@ CLI usage (change poll rate without restarting the server):
   flask xp-tracker set-interval <minutes>
 """
 
+import threading
 import time
 import logging
-
-from apscheduler.schedulers.background import BackgroundScheduler
 
 from core.bitjita import get_player
 from plugins.xp_tracker import db
 
 log = logging.getLogger("xp_tracker.poller")
 
-_scheduler = None
+_thread  = None
+_running = False
 
 
 def _extract_skill_data(player_data):
@@ -122,10 +122,7 @@ def _do_poll():
 
 
 def _tick():
-    """
-    Called every minute by APScheduler.
-    Runs the actual poll only if the configured interval has elapsed.
-    """
+    """Runs the actual poll only if the configured interval has elapsed."""
     try:
         interval_minutes = int(db.get_config("poll_interval_minutes", "10"))
         last_poll        = int(db.get_config("last_poll_time", "0"))
@@ -137,18 +134,20 @@ def _tick():
         log.exception("Error in XP Tracker scheduler tick.")
 
 
+def _loop():
+    """Background thread: tick once per minute until _running is False."""
+    while _running:
+        _tick()
+        time.sleep(60)
+
+
 def start_scheduler():
-    """
-    Start the background scheduler. Called once from app.py at startup.
-    Returns the scheduler instance (stored globally for CLI access).
-    """
-    global _scheduler
-    _scheduler = BackgroundScheduler(daemon=True)
-    _scheduler.add_job(_tick, "interval", minutes=1, id="xp_tracker_tick",
-                       max_instances=1, coalesce=True)
-    _scheduler.start()
+    """Start the background polling thread. Called once from app.py at startup."""
+    global _thread, _running
+    _running = True
+    _thread  = threading.Thread(target=_loop, name="xp_tracker_poller", daemon=True)
+    _thread.start()
     log.info("XP Tracker scheduler started (tick every 1 min).")
-    return _scheduler
 
 
 def trigger_poll_now():
@@ -167,5 +166,5 @@ def get_status():
         "poll_interval_minutes": interval,
         "last_poll_time":        last_poll,
         "next_poll_in_seconds":  max(0, next_poll - now),
-        "scheduler_running":     _scheduler is not None and _scheduler.running,
+        "scheduler_running":     _thread is not None and _thread.is_alive(),
     }
