@@ -263,6 +263,37 @@ def api_history(player_id):
     return jsonify(data)
 
 
+@bp.route("/api/skill-gains/<player_id>")
+def api_skill_gains(player_id):
+    window    = request.args.get("window", "7d")
+    since     = _window_since(window)
+    snapshots = db.get_snapshots(player_id, since=since)
+
+    skill_gains = []
+    if len(snapshots) >= 2:
+        first = snapshots[0]
+        last  = snapshots[-1]
+        for skill in DISPLAY_SKILLS:
+            sid   = str(skill["id"])
+            start = first["skill_data"].get(sid, 0)
+            end   = last["skill_data"].get(sid, 0)
+            gain  = end - start
+            if gain > 0 or end > 0:
+                start_level, _, _, _ = xp_to_level(start)
+                end_level,   _, _, _ = xp_to_level(end)
+                skill_gains.append({
+                    **skill,
+                    "gain":        gain,
+                    "end_xp":      end,
+                    "start_level": start_level,
+                    "end_level":   end_level,
+                    "levelled_up": end_level > start_level,
+                })
+        skill_gains.sort(key=lambda s: s["gain"], reverse=True)
+
+    return jsonify({"skill_gains": skill_gains, "window": window})
+
+
 @bp.route("/api/empire-history")
 def api_empire_history():
     """

@@ -40,6 +40,33 @@ def _get(endpoint, params=None):
         return None
 
 
+def _get_text(endpoint):
+    """Like _get but returns raw text (for CSV endpoints)."""
+    try:
+        url = f"{BASE_URL}{endpoint}"
+        resp = requests.get(url, headers=HEADERS, timeout=TIMEOUT)
+        resp.raise_for_status()
+        return resp.text
+    except requests.exceptions.HTTPError as e:
+        print(f"[BitjitaAPI] Error fetching {endpoint}: {e}")
+        return None
+    except requests.exceptions.RequestException as e:
+        print(f"[BitjitaAPI] Error fetching {endpoint}: {e}")
+        return None
+
+
+# ── STATIC DATA ──────────────────────────────────────────────────────────────
+
+def get_experience_levels_json():
+    """GET /static/experience/levels.json — level XP thresholds as JSON."""
+    return _get("/static/experience/levels.json")
+
+
+def get_experience_levels_csv():
+    """GET /static/experience/levels.csv — level XP thresholds as CSV text."""
+    return _get_text("/static/experience/levels.csv")
+
+
 # ── PLAYERS ──────────────────────────────────────────────────────────────────
 
 def search_players(query):

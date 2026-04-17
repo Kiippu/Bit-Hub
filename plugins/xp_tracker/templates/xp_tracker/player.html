@@ -119,30 +119,9 @@
 </div>
 
 <!-- Per-skill gains table -->
-<div class="card">
-  <div class="card-title">Skill Breakdown · <span style="color:var(--text-secondary);font-size:11px">{{ window }} window</span></div>
-  {% if skill_gains %}
-  <div class="gains-grid">
-    {% for s in skill_gains %}
-    {% set gain = s.gain %}
-    <div class="gain-card" onclick="setSkill('{{ s.id }}')" style="cursor:pointer" title="Click to chart {{ s.name }}">
-      <div class="gain-skill">
-        <span class="gain-icon">{{ skill_icons.get(s.name, '•') }}</span>
-        <span class="gain-name">{{ s.name }}</span>
-      </div>
-      <div class="gain-xp {% if gain == 0 %}zero{% endif %}">
-        {% if gain > 0 %}+{{ "{:,}".format(gain) }}{% else %}—{% endif %}
-      </div>
-      <div class="gain-level">
-        Lv {{ s.start_level }} → <span class="{% if s.levelled_up %}up{% endif %}">Lv {{ s.end_level }}</span>
-        {% if s.levelled_up %} ↑{% endif %}
-      </div>
-    </div>
-    {% endfor %}
-  </div>
-  {% else %}
-  <div class="no-data">No XP gains recorded in this window.</div>
-  {% endif %}
+<div class="card" id="skill-breakdown-card">
+  <div class="card-title">Skill Breakdown · <span id="breakdown-window-label" style="color:var(--text-secondary);font-size:11px">{{ window }} window</span></div>
+  <div id="skill-breakdown-content"></div>
 </div>
 {% endif %}
 
@@ -156,6 +135,7 @@ function setWindow(w) {
   currentWindow = w;
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.textContent === w));
   loadChart();
+  loadSkillGains();
   updateURL();
 }
 
@@ -258,14 +238,55 @@ function renderChart(labels, gains) {
   });
 }
 
-// Populate skills-levelled stat from template data
-const skillGains = {{ skill_gains | tojson }};
-const levelled   = skillGains.filter(s => s.levelled_up).length;
-document.getElementById('stat-skills-levelled') && (document.getElementById('stat-skills-levelled').textContent = levelled);
+const SKILL_ICONS = {{ skill_icons | tojson }};
 
-// Initial chart load
+async function loadSkillGains() {
+  const params = new URLSearchParams({ window: currentWindow });
+  const data = await fetch(`/xp-tracker/api/skill-gains/${PLAYER_ID}?${params}`)
+    .then(r => r.json())
+    .catch(() => null);
+
+  const content = document.getElementById('skill-breakdown-content');
+  const label   = document.getElementById('breakdown-window-label');
+  if (label) label.textContent = currentWindow + ' window';
+
+  if (!data || !data.skill_gains) { content.innerHTML = ''; return; }
+
+  const gains = data.skill_gains;
+  const levelled = gains.filter(s => s.levelled_up).length;
+  const statEl = document.getElementById('stat-skills-levelled');
+  if (statEl) statEl.textContent = levelled;
+
+  if (!gains.length) {
+    content.innerHTML = '<div class="no-data">No XP gains recorded in this window.</div>';
+    return;
+  }
+
+  const cards = gains.map(s => {
+    const icon = SKILL_ICONS[s.name] || '•';
+    const gainHtml = s.gain > 0
+      ? `+${s.gain.toLocaleString()}`
+      : '—';
+    const gainClass = s.gain === 0 ? 'gain-xp zero' : 'gain-xp';
+    const levelClass = s.levelled_up ? 'up' : '';
+    const arrow = s.levelled_up ? ' ↑' : '';
+    return `<div class="gain-card" onclick="setSkill('${s.id}')" style="cursor:pointer" title="Click to chart ${s.name}">
+      <div class="gain-skill">
+        <span class="gain-icon">${icon}</span>
+        <span class="gain-name">${s.name}</span>
+      </div>
+      <div class="${gainClass}">${gainHtml}</div>
+      <div class="gain-level">Lv ${s.start_level} → <span class="${levelClass}">Lv ${s.end_level}</span>${arrow}</div>
+    </div>`;
+  }).join('');
+
+  content.innerHTML = `<div class="gains-grid">${cards}</div>`;
+}
+
+// Initial load
 {% if snapshot_count >= 2 %}
 loadChart();
+loadSkillGains();
 {% endif %}
 </script>
 {% endblock %}
