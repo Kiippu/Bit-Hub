@@ -125,7 +125,7 @@ def index():
     error          = None
 
     if name:
-        search_data = search_players(name, limit=10)
+        search_data = search_players(name)
 
         if search_data is None:
             if name.lower() == "gordan":
@@ -133,6 +133,9 @@ def index():
                 using_mock  = True
             else:
                 error = f'API unreachable. Try "Gordan" for mock data.'
+        elif "__http_error__" in search_data:
+            error = f'API error looking up "{name}". Please try again.'
+            search_data = None
 
         if search_data:
             players = search_data.get("players", [])

@@ -34,6 +34,12 @@ def format_int(value):
 from plugins.empire_planner import db as epdb
 epdb.init_db()
 
+# ── Initialise XP Tracker DB + start background poller ───────────────────────
+from plugins.xp_tracker import db as xptdb
+from plugins.xp_tracker import poller as xpt_poller
+xptdb.init_db()
+xpt_poller.start_scheduler()
+
 # ── Load plugins ──────────────────────────────────────────────────────────────
 plugin_registry = load_plugins(app)
 
