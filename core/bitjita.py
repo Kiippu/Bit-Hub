@@ -190,7 +190,7 @@ def get_leaderboard_exploration(page=1, page_size=50):
 
 # ── CLAIMS ───────────────────────────────────────────────────────────────────
 
-def get_claims(search=None, sort="supplies", limit=50):
+def get_claims(search=None, sort="supplies", limit=50, offset=0):
     """
     GET /api/claims
     Sort: entityId, name, neutral, regionName, supplies, numTiles,
@@ -198,7 +198,7 @@ def get_claims(search=None, sort="supplies", limit=50):
     Each claim: entityId, name, neutral, regionName, supplies, numTiles,
                 treasury, ownerPlayerUsername, tier
     """
-    params = {"sort": sort, "limit": limit}
+    params = {"sort": sort, "limit": limit, "offset": offset}
     if search:
         params["q"] = search
     return _get("/api/claims", params=params)

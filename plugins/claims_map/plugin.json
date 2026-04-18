@@ -1,0 +1,10 @@
+{
+  "id": "claims_map",
+  "name": "Claims Map",
+  "description": "Top-down map of every claim, plotted by world coordinates.",
+  "icon": "🗺",
+  "author": "BitCraft Hub",
+  "route_prefix": "/claims-map",
+  "tag": "MAP",
+  "version": "1.0"
+}
