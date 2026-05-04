@@ -60,14 +60,16 @@ def market_orders():
 
 @bp.route("/api/market/deals")
 def market_deals():
-    data, status = _proxy("/api/market/deals")
+    params = {k: v for k, v in flask_request.args.items()}
+    data, status = _proxy("/api/market/deals", params)
     return jsonify(data), status
 
 
 @bp.route("/api/market/<string:item_type>/<int:item_id>")
 def market_item(item_type, item_id):
     """Order book for a specific item/cargo: /api/market/item/123 or /api/market/cargo/123"""
-    data, status = _proxy(f"/api/market/{item_type}/{item_id}")
+    params = {k: v for k, v in flask_request.args.items()}
+    data, status = _proxy(f"/api/market/{item_type}/{item_id}", params)
     return jsonify(data), status
 
 

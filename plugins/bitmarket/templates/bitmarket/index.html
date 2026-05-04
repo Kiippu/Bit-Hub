@@ -312,12 +312,16 @@
 
   /* Order Book */
   .ob-hdr {
-    display: grid; grid-template-columns: 1fr 1fr 1fr 36px; padding: 6px 12px;
+    display: grid; grid-template-columns: 1fr 1fr 1fr 70px; padding: 6px 12px;
     font-size: 9px; color: var(--bm-faint); text-transform: uppercase; letter-spacing: 0.8px;
     border-bottom: 1px solid var(--bm-bd);
   }
+  .ob-hdr span { cursor: pointer; user-select: none; transition: color .12s; }
+  .ob-hdr span:hover { color: var(--bm-text); }
+  .ob-hdr span.ob-sort-active { color: var(--bm-blue); }
+  .ob-sort-ind { font-size: 8px; margin-left: 2px; }
   .ob-row {
-    display: grid; grid-template-columns: 1fr 1fr 1fr 36px; padding: 4px 12px; font-size: 11px;
+    display: grid; grid-template-columns: 1fr 1fr 1fr 70px; padding: 4px 12px; font-size: 11px;
     transition: background 0.1s; position: relative; overflow: visible;
   }
   .ob-row:hover { background: var(--bm-bg3); }
@@ -380,10 +384,30 @@
   .bm-toast.error { border-color: var(--bm-red);  color: var(--bm-red); }
 
   /* Debug */
-  .dbg-line { padding: 5px 12px; border-bottom: 1px solid rgba(30,37,53,0.5); }
-  .dbg-ts   { color: var(--bm-faint); font-size: 9px; margin-right: 6px; }
-  .dbg-lbl  { color: var(--bm-yell); font-size: 10px; font-weight: 600; display: block; margin-bottom: 2px; }
-  .dbg-pre  { color: var(--bm-dim); font-size: 9px; white-space: pre-wrap; word-break: break-all; line-height: 1.4; }
+
+  /* Star / Favourites */
+  .bm-item-row { grid-template-columns: 30px 1fr auto 16px; }
+  .bm-star-btn {
+    background: none; border: none; cursor: pointer; padding: 0; line-height: 1;
+    color: var(--bm-faint); font-size: 13px; transition: color .15s; flex-shrink: 0;
+  }
+  .bm-star-btn:hover { color: var(--bm-yell); }
+  .bm-star-btn.starred { color: var(--bm-yell); }
+  .fav-row {
+    display: grid; grid-template-columns: 30px 1fr auto; align-items: center;
+    padding: 5px 10px 5px 8px; border-bottom: 1px solid rgba(30,37,53,0.5);
+    cursor: pointer; transition: background 0.1s; gap: 8px;
+  }
+  .fav-row:hover { background: var(--bm-bg3); }
+  .fav-row.active { background: rgba(0,148,255,0.08); border-left: 2px solid var(--bm-blue); padding-left: 6px; }
+  .fav-unstar {
+    background: none; border: none; cursor: pointer; color: var(--bm-yell);
+    font-size: 13px; padding: 0; line-height: 1;
+  }
+  .fav-unstar:hover { color: var(--bm-red); }
+  #section-favs .fav-empty {
+    padding: 32px 12px; text-align: center; color: var(--bm-faint); font-size: 11px; line-height: 1.8;
+  }
 
   @media (max-width: 900px) {
     #bm-main { grid-template-columns: 220px 1fr 0; }
@@ -526,7 +550,7 @@
         <button class="bm-rtab active" data-tab="orderbook">Book</button>
         <button class="bm-rtab" data-tab="trades">Trades</button>
         <button class="bm-rtab" data-tab="deals">Deals</button>
-        <button class="bm-rtab" data-tab="debug" style="color:var(--bm-yell)">Debug</button>
+        <button class="bm-rtab" data-tab="favs" style="color:var(--bm-yell)">★ Favs</button>
       </div>
       <div class="bm-rcontent">
         <div class="bm-section active" id="section-orderbook">
@@ -538,9 +562,8 @@
         <div class="bm-section" id="section-deals">
           <div class="bm-panel-loading"><div class="bm-spinner"></div><span>Loading deals…</span></div>
         </div>
-        <div class="bm-section" id="section-debug">
-          <div style="padding:8px 12px 4px;font-size:9px;color:var(--bm-faint);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--bm-bd)">API Request Log</div>
-          <div id="debug-log"></div>
+        <div class="bm-section" id="section-favs">
+          <div class="fav-empty">Star items in the list<br>to add them here for quick lookup</div>
         </div>
       </div>
     </div>
@@ -561,9 +584,28 @@ let activeFilter = 'all', activeRightTab = 'orderbook';
 let activeRarityFilter = '';
 let lastChartFP = '', lastBookFP = '';
 
+// Order book sort state
+let obRawSells = [], obRawBuys = [], obStats = {};
+let obSortCol = 'price', obSortDir = 1; // sells use dir; buys use -dir for price, dir for others
+
+// Favourites — persisted in localStorage
+let favoriteItems = new Map(); // itemKey -> { id, type, name, iconUrl }
+function favKey(id, type) { return `${type}:${id}`; }
+function loadFavourites() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('bm-favorites') || '[]');
+    saved.forEach(f => favoriteItems.set(favKey(f.id, f.type), f));
+  } catch(e) {}
+}
+function saveFavourites() {
+  try { localStorage.setItem('bm-favorites', JSON.stringify([...favoriteItems.values()])); } catch(e) {}
+}
+loadFavourites();
+
 // Region & market multiselect state
 let allRegions = [];          // [{ regionId, regionName }]
-let regionClaims = {};        // regionId -> [{ claimEntityId, claimName }]
+let allClaims  = [];          // all claims fetched once at startup
+let regionClaims = {};        // regionId -> [claim] — derived from allClaims
 let selectedRegions = new Set();  // set of regionId strings (empty = all)
 let selectedMarkets = new Set();  // set of claimEntityId strings (empty = all)
 
@@ -581,30 +623,16 @@ function rarityBadge(r) {
 // ── API base — calls Flask proxy routes (no Node/CORS issues) ──────────────
 const API = '/bitmarket/api';
 
-// ── Debug log ──────────────────────────────────────────────────────────────
-const debugLines = [];
-function dbg(label, data) {
-  debugLines.unshift({ label, data, ts: new Date().toLocaleTimeString() });
-  if (debugLines.length > 30) debugLines.pop();
-  const el = document.getElementById('debug-log');
-  if (el) el.innerHTML = debugLines.map(l =>
-    `<div class="dbg-line"><span class="dbg-ts">${l.ts}</span><span class="dbg-lbl">${l.label}</span><pre class="dbg-pre">${JSON.stringify(l.data, null, 2)}</pre></div>`
-  ).join('');
-}
-
 // ── Fetch helper ───────────────────────────────────────────────────────────
 async function apiFetch(path, params = {}) {
   const url = new URL(API + path, location.origin);
   Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== '') url.searchParams.set(k, v); });
-  dbg(`→ GET ${path}`, params);
   try {
     const r = await fetch(url.toString());
     const json = await r.json();
-    if (!r.ok) { dbg(`✗ HTTP ${r.status} ${path}`, json); throw new Error(`HTTP ${r.status}`); }
-    dbg(`← ${path}`, json);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
     return json;
   } catch(e) {
-    dbg(`✗ ERR ${path}`, { error: e.message });
     throw e;
   }
 }
@@ -638,8 +666,31 @@ function fp(data) { return JSON.stringify(data).length + '|' + JSON.stringify(da
 
 // ── Init ───────────────────────────────────────────────────────────────────
 async function init() {
-  await Promise.all([loadRegions(), loadMarket(), loadDeals()]);
+  // Regions + claims must both be ready before we can bucket; market/deals run in parallel
+  await Promise.all([loadRegions(), loadAllClaims()]);
+  bucketClaimsByRegion();
+  await Promise.all([loadMarket(), loadDeals()]);
   buildTicker();
+}
+
+async function loadAllClaims() {
+  try {
+    const data = await apiFetch('/claims', { limit: 2000 });
+    allClaims = (data.claims || (Array.isArray(data) ? data : [])).filter(c => c.entityId);
+  } catch(e) { console.error('loadAllClaims', e); }
+}
+
+function bucketClaimsByRegion() {
+  regionClaims = {};
+  allClaims.forEach(c => {
+    const rName = c.regionName || c.region || '';
+    const rObj  = allRegions.find(r => (r.regionName||r.name) === rName);
+    const rid   = rObj ? String(rObj.regionId||rObj.id) : rName;
+    if (rid) {
+      if (!regionClaims[rid]) regionClaims[rid] = [];
+      regionClaims[rid].push(c);
+    }
+  });
 }
 
 // ── Regions + Markets multiselect ─────────────────────────────────────────
@@ -669,7 +720,6 @@ function toggleRegion(chip, regionId) {
     selectedRegions.add(regionId);
   } else {
     selectedRegions.delete(regionId);
-    delete regionClaims[regionId]; // force refetch next time
   }
   if (selectedRegions.size > 0) {
     // Reload markets for all selected regions combined
@@ -682,62 +732,19 @@ function toggleRegion(chip, regionId) {
   applyMarketFilter();
 }
 
-async function rebuildMarketsForSelectedRegions() {
-  // Fetch claims for all selected regions in parallel, merge, rebuild dropdown
-  const fetches = [...selectedRegions].map(rid => {
-    if (regionClaims[rid]) return Promise.resolve(regionClaims[rid]);
-    return apiFetch('/claims', { regionId: rid, limit: 200 })
-      .then(d => { const c=(d.claims||d||[]).filter(x=>x.entityId); regionClaims[rid]=c; return c; })
-      .catch(() => []);
-  });
-  const results = await Promise.all(fetches);
-  let allClaims = results.flat();
-  // Deduplicate
+function rebuildMarketsForSelectedRegions() {
+  // Merge cached claims for all selected regions — no API call needed
   const seen = new Set();
-  allClaims = allClaims.filter(c => { const k=String(c.entityId); if(seen.has(k)) return false; seen.add(k); return true; });
+  let claims = [...selectedRegions].flatMap(rid => regionClaims[rid] || [])
+    .filter(c => { const k = String(c.entityId); if (seen.has(k)) return false; seen.add(k); return true; });
 
-  // If item selected, filter to only claims with orders for it
-  if (selectedItem && allClaims.length) {
-    try {
-      const params = {};
-      if (selectedRegions.size === 1) params.regionId = [...selectedRegions][0];
-      const od = await apiFetch(`/market/${selectedType}/${selectedItem}`, params);
-      const active = new Set([...(od.sellOrders||[]),...(od.buyOrders||[])].map(o=>String(o.claimEntityId)).filter(Boolean));
-      if (active.size) allClaims = allClaims.filter(c => active.has(String(c.entityId)));
-    } catch(e) {}
+  // If an item is loaded, narrow to claims that have active orders for it
+  if (selectedItem && obRawSells.length + obRawBuys.length > 0) {
+    const active = new Set([...obRawSells, ...obRawBuys].map(o => String(o.claimEntityId)).filter(Boolean));
+    if (active.size) claims = claims.filter(c => active.has(String(c.entityId)));
   }
-  rebuildMarketDropdown(allClaims);
-}
 
-async function loadMarketsForRegion(regionId) {
-  try {
-    let claims = regionClaims[regionId];
-    if (!claims) {
-      // Fetch claims in this region; if an item is selected, filter to only
-      // claims that have orders for that item via the market endpoint
-      const params = { regionId, limit: 200 };
-      const data   = await apiFetch('/claims', params);
-      claims = (data.claims || data || []).filter(c => c.entityId);
-      regionClaims[regionId] = claims;
-    }
-
-    // If an item is selected, also fetch its order book to find which claims
-    // actually have active orders — filter the dropdown to those
-    let activeClaims = new Set();
-    if (selectedItem) {
-      try {
-        const od = await apiFetch(`/market/${selectedType}/${selectedItem}`, { regionId });
-        const orders = [...(od.sellOrders||[]), ...(od.buyOrders||[])];
-        orders.forEach(o => { if (o.claimEntityId) activeClaims.add(String(o.claimEntityId)); });
-      } catch(e) { /* fall back to all claims */ }
-    }
-
-    const filtered = (activeClaims.size > 0)
-      ? claims.filter(c => activeClaims.has(String(c.entityId)))
-      : claims;
-
-    rebuildMarketDropdown(filtered);
-  } catch(e) { dbg('loadMarketsForRegion error', e.message); }
+  rebuildMarketDropdown(claims);
 }
 
 function rebuildMarketDropdown(claims) {
@@ -821,9 +828,11 @@ function clearMarkets() {
 function applyMarketFilter() {
   // Reload item list & chart with new filters
   loadMarket();
+  loadDeals();
   if (selectedItem) {
     loadPriceHistory(selectedItem, selectedType, currentBucket);
     if (activeRightTab === 'orderbook') loadOrderBook(selectedItem, selectedType);
+    if (activeRightTab === 'trades')    loadRecentTrades(selectedItem, selectedType);
   }
 }
 
@@ -833,6 +842,13 @@ function getMarketParams() {
   if (selectedRegions.size === 1) params.regionId = [...selectedRegions][0];
   if (selectedMarkets.size === 1) params.claimEntityId = [...selectedMarkets][0];
   return params;
+}
+
+// Client-side filter for orders/trades — API may not honour region params
+function matchesFilter(o) {
+  if (selectedMarkets.size > 0) return selectedMarkets.has(String(o.claimEntityId));
+  if (selectedRegions.size > 0) return selectedRegions.has(String(o.regionId));
+  return true;
 }
 
 // ── Market item list ───────────────────────────────────────────────────────
@@ -861,7 +877,6 @@ async function loadMarket() {
     allItems = [...items, ...cargos].sort((a, b) => (b.sellOrderCount||0) - (a.sellOrderCount||0));
 
     if (!allItems.length) {
-      dbg('loadMarket: EMPTY — raw keys', Object.keys(raw||{}));
       document.getElementById('bm-item-list').innerHTML = '<div class="bm-panel-loading" style="color:var(--bm-dim)">No items — check Debug tab</div>';
       return;
     }
@@ -908,6 +923,9 @@ function renderItemList() {
       ? `<img class="bm-icon" src="${iconUrl}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" loading="lazy"><div class="bm-icon-fb" style="display:none">${name.charAt(0)}</div>`
       : `<div class="bm-icon-fb">${name.charAt(0)}</div>`;
     const rarityTag = rarity ? `<span class="bm-item-rarity ${rcls}" style="font-size:9px">${rarity}${tier?' · '+tier:''}</span>` : (tier ? `<span style="font-size:9px;color:var(--bm-faint)">${tier}</span>` : '');
+    const isFav    = favoriteItems.has(favKey(item.id, item._type));
+    const starCls  = isFav ? 'starred' : '';
+    const starIcon = isFav ? '★' : '☆';
     return `<div class="bm-item-row ${isAct?'active':''}" data-idx="${idx}" data-rarity="${rarity}" onclick="selectItem(${idx})">
       <div class="bm-icon-wrap">${icon}</div>
       <div style="min-width:0;flex:1">
@@ -915,8 +933,77 @@ function renderItemList() {
         <div style="display:flex;align-items:center;gap:5px;margin-top:1px">${rarityTag}<span class="bm-item-cat" style="margin-top:0">${cat}</span></div>
       </div>
       <div class="bm-item-price">${dp>0?fmt(dp):'—'}</div>
+      <button class="bm-star-btn ${starCls}" title="${isFav?'Remove from favourites':'Add to favourites'}" onclick="event.stopPropagation();toggleFavourite(${idx})">${starIcon}</button>
     </div>`;
   }).join('');
+}
+
+// ── Favourites ─────────────────────────────────────────────────────────────
+function toggleFavourite(idx) {
+  const item = filteredItems[idx];
+  if (!item) return;
+  const k = favKey(item.id, item._type);
+  if (favoriteItems.has(k)) {
+    favoriteItems.delete(k);
+  } else {
+    const iconUrl = item.iconAssetName ? `https://bitjita.com/${item.iconAssetName}.webp` : null;
+    favoriteItems.set(k, { id: item.id, type: item._type, name: item.name || item.itemName || 'Unknown', iconUrl });
+  }
+  saveFavourites();
+  renderItemList();
+  if (activeRightTab === 'favs') renderFavouritesPanel();
+}
+
+function renderFavouritesPanel() {
+  const sec = document.getElementById('section-favs');
+  if (!favoriteItems.size) {
+    sec.innerHTML = '<div class="fav-empty">Star items in the list<br>to add them here for quick lookup</div>';
+    return;
+  }
+  sec.innerHTML = [...favoriteItems.values()].map(f => {
+    const isAct = selectedItem === f.id && selectedType === f.type;
+    const icon  = f.iconUrl
+      ? `<img class="bm-icon" src="${f.iconUrl}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" loading="lazy"><div class="bm-icon-fb" style="display:none">${f.name.charAt(0)}</div>`
+      : `<div class="bm-icon-fb">${f.name.charAt(0)}</div>`;
+    const k = favKey(f.id, f.type);
+    return `<div class="fav-row ${isAct?'active':''}" onclick="selectFavourite('${f.id}','${f.type}')">
+      <div class="bm-icon-wrap">${icon}</div>
+      <div class="bm-item-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${f.name}</div>
+      <button class="fav-unstar" title="Remove from favourites" onclick="event.stopPropagation();removeFavourite('${k}')">★</button>
+    </div>`;
+  }).join('');
+}
+
+function removeFavourite(k) {
+  favoriteItems.delete(k);
+  saveFavourites();
+  renderItemList();
+  renderFavouritesPanel();
+}
+
+async function selectFavourite(itemId, type) {
+  // Find in allItems first (may not be in filtered list)
+  const item = allItems.find(i => String(i.id) === String(itemId) && i._type === type);
+  if (!item) { toast('Item not in current market view — clear filters to find it', 'warn'); return; }
+  const idx = filteredItems.findIndex(i => String(i.id) === String(itemId) && i._type === type);
+  if (idx >= 0) {
+    selectItem(idx);
+  } else {
+    // Select directly without going through filteredItems
+    selectedItem = item.id;
+    selectedType = item._type;
+    lastChartFP = ''; lastBookFP = '';
+    document.getElementById('bm-placeholder').style.display = 'none';
+    document.getElementById('bm-item-label').textContent = item.name || item.itemName || '?';
+    document.getElementById('bm-item-price').textContent = '...';
+    document.getElementById('bm-item-chg').textContent = '';
+    renderFavouritesPanel();
+    await Promise.all([
+      loadPriceHistory(item.id, item._type, currentBucket),
+      loadOrderBook(item.id, item._type),
+      loadRecentTrades(item.id, item._type),
+    ]);
+  }
 }
 
 // ── Select item ────────────────────────────────────────────────────────────
@@ -1054,40 +1141,93 @@ function renderChart(labels, prices, volumes) {
 }
 
 // ── Order Book ─────────────────────────────────────────────────────────────
+function obMktTag(o) {
+  const claimName  = o.claimName || o.settlementName || '';
+  const regionName = o.regionName || '';
+  const regionId   = o.regionId   || o.region_id || '';
+  const baseName   = claimName || regionName;
+  if (!baseName) return '<span></span>';
+  const acronym = baseName.split(/[^a-zA-Z0-9]+/).filter(Boolean).map(w=>w[0]).join('').toUpperCase().slice(0,4);
+  let regionTag = '';
+  if (claimName) {
+    const rNum = regionId ? String(regionId) : ((regionName.match(/(\d+)/)||[])[1] || '');
+    if (rNum) regionTag = `(R${rNum})`;
+  }
+  const display = acronym + regionTag;
+  const tipText = claimName + (regionName ? ` · ${regionName}` : '');
+  const safeTip = tipText.replace(/'/g, "\\'");
+  return `<span class="bm-mkt-tag" data-tip="${tipText}" onmouseenter="showTip(event,'${safeTip}')" onmouseleave="hideTip()">${display}</span>`;
+}
+
+function obSortFn(col, dir) {
+  return (a, b) => {
+    if (col === 'qty')   return dir * (qty(a)   - qty(b));
+    if (col === 'total') return dir * (price(a)*qty(a) - price(b)*qty(b));
+    if (col === 'mkt') {
+      const na = (a.claimName || a.settlementName || a.regionName || '').toLowerCase();
+      const nb = (b.claimName || b.settlementName || b.regionName || '').toLowerCase();
+      return dir * (na < nb ? -1 : na > nb ? 1 : 0);
+    }
+    return dir * (price(a) - price(b));
+  };
+}
+
+function obClickSort(col) {
+  if (obSortCol === col) obSortDir = -obSortDir;
+  else { obSortCol = col; obSortDir = col === 'price' ? 1 : -1; }
+  renderOrderBook();
+}
+
+function renderOrderBook() {
+  const sec = document.getElementById('section-orderbook');
+  const st  = obStats;
+
+  // For price column: sells ascending, buys descending by default; other cols both use obSortDir
+  const sellDir = (obSortCol === 'price') ? obSortDir       : obSortDir;
+  const buyDir  = (obSortCol === 'price') ? -obSortDir      : obSortDir;
+
+  const sells = [...obRawSells].sort(obSortFn(obSortCol, sellDir));
+  const buys  = [...obRawBuys ].sort(obSortFn(obSortCol, buyDir));
+
+  const bSell = obRawSells.length ? price([...obRawSells].sort(obSortFn('price',1))[0])  : (st.lowestSell  ?? 0);
+  const bBuy  = obRawBuys.length  ? price([...obRawBuys ].sort(obSortFn('price',-1))[0]) : (st.highestBuy  ?? 0);
+  const spread = (bSell && bBuy) ? bSell - bBuy : (st.orderBookSpread ?? 0);
+  const maxQ   = Math.max(...sells.map(qty), ...buys.map(qty), 1);
+
+  function ind(col) {
+    if (obSortCol !== col) return '';
+    return `<span class="ob-sort-ind">${obSortDir > 0 ? '▲' : '▼'}</span>`;
+  }
+  function hdrSpan(col, label, align) {
+    const active = obSortCol === col ? ' ob-sort-active' : '';
+    return `<span class="${active}" style="text-align:${align}" onclick="obClickSort('${col}')">${label}${ind(col)}</span>`;
+  }
+
+  const hdr   = `<div class="ob-hdr">${hdrSpan('price','Price','left')}${hdrSpan('qty','Qty','center')}${hdrSpan('total','Total','right')}${hdrSpan('mkt','Mkt','right')}</div>`;
+  const sellH = sells.length
+    ? sells.map(o => { const p=price(o),q=qty(o),w=Math.round((q/maxQ)*100); return `<div class="ob-row sell"><div class="depth-bar" style="width:${w}%"></div><span class="cp">${fmt(p)}</span><span class="cq">${fmtInt(q)}</span><span class="ct">${fmt(p*q)}</span>${obMktTag(o)}</div>`; }).join('')
+    : `<div style="padding:8px;font-size:10px;color:var(--bm-faint);text-align:center">No sell orders</div>`;
+  const spreH = `<div class="ob-spread">Spread <span class="sv">${spread>0?fmt(spread):'—'}</span>${bSell&&bBuy?`<span style="color:var(--bm-faint)">(${((spread/bSell)*100).toFixed(2)}%)</span>`:''} &nbsp;·&nbsp; S:${st.sellOrderCount??0} B:${st.buyOrderCount??0}</div>`;
+  const buyH  = buys.length
+    ? buys.map(o => { const p=price(o),q=qty(o),w=Math.round((q/maxQ)*100); return `<div class="ob-row buy"><div class="depth-bar" style="width:${w}%"></div><span class="cp">${fmt(p)}</span><span class="cq">${fmtInt(q)}</span><span class="ct">${fmt(p*q)}</span>${obMktTag(o)}</div>`; }).join('')
+    : `<div style="padding:8px;font-size:10px;color:var(--bm-faint);text-align:center">No buy orders</div>`;
+
+  sec.innerHTML = hdr + sellH + spreH + buyH;
+}
+
 async function loadOrderBook(itemId, type) {
   if (activeRightTab !== 'orderbook') return;
   const sec = document.getElementById('section-orderbook');
   sec.innerHTML = '<div class="bm-panel-loading"><div class="bm-spinner"></div></div>';
   try {
-    const obParams = getMarketParams();
-    const data  = await apiFetch(`/market/${type}/${itemId}`, obParams);
+    const data  = await apiFetch(`/market/${type}/${itemId}`, getMarketParams());
     const first = data.sellOrders?.[0] || data.buyOrders?.[0];
-    if (first) dbg('order[0] raw', first);
-
-    const st    = data.stats || {};
-    const sells = (data.sellOrders || []).slice(0,25).sort((a,b) => price(a)-price(b));
-    const buys  = (data.buyOrders  || []).slice(0,25).sort((a,b) => price(b)-price(a));
-    const bSell = sells.length ? price(sells[0]) : (st.lowestSell ?? 0);
-    const bBuy  = buys.length  ? price(buys[0])  : (st.highestBuy ?? 0);
-    const spread= (bSell && bBuy) ? bSell - bBuy : (st.orderBookSpread ?? 0);
-    const maxQ  = Math.max(...sells.map(qty), ...buys.map(qty), 1);
-
-    function mktTag(o) {
-      const name = o.claimName || o.settlementName || o.regionName || '';
-      if (!name) return '<span></span>';
-      const acronym = name.split(/[^a-zA-Z0-9]+/).filter(Boolean).map(w=>w[0]).join('').toUpperCase().slice(0,4);
-      return `<span class="bm-mkt-tag" data-tip="${name}" onmouseenter="showTip(event,'${name.replace(/'/g,"\'")}')" onmouseleave="hideTip()">${acronym}</span>`;
-    }
-
-    const hdr    = `<div class="ob-hdr"><span>Price</span><span style="text-align:center">Qty</span><span style="text-align:right">Total</span><span style="text-align:right;font-size:9px">Mkt</span></div>`;
-    const sellH  = sells.length
-      ? sells.map(o => { const p=price(o),q=qty(o),w=Math.round((q/maxQ)*100); return `<div class="ob-row sell"><div class="depth-bar" style="width:${w}%"></div><span class="cp">${fmt(p)}</span><span class="cq">${fmtInt(q)}</span><span class="ct">${fmt(p*q)}</span>${mktTag(o)}</div>`; }).join('')
-      : `<div style="padding:8px;font-size:10px;color:var(--bm-faint);text-align:center">No sell orders</div>`;
-    const spreH  = `<div class="ob-spread">Spread <span class="sv">${spread>0?fmt(spread):'—'}</span>${bSell&&bBuy?`<span style="color:var(--bm-faint)">(${((spread/bSell)*100).toFixed(2)}%)</span>`:''} &nbsp;·&nbsp; S:${st.sellOrderCount??0} B:${st.buyOrderCount??0}</div>`;
-    const buyH   = buys.length
-      ? buys.map(o => { const p=price(o),q=qty(o),w=Math.round((q/maxQ)*100); return `<div class="ob-row buy"><div class="depth-bar" style="width:${w}%"></div><span class="cp">${fmt(p)}</span><span class="cq">${fmtInt(q)}</span><span class="ct">${fmt(p*q)}</span>${mktTag(o)}</div>`; }).join('')
-      : `<div style="padding:8px;font-size:10px;color:var(--bm-faint);text-align:center">No buy orders</div>`;
-    sec.innerHTML = hdr + sellH + spreH + buyH;
+    obRawSells = (data.sellOrders || []).filter(matchesFilter).slice(0, 25);
+    obRawBuys  = (data.buyOrders  || []).filter(matchesFilter).slice(0, 25);
+    obStats    = data.stats || {};
+    // Reset to default price sort on new item load
+    obSortCol = 'price'; obSortDir = 1;
+    renderOrderBook();
   } catch(e) {
     sec.innerHTML = `<div class="bm-panel-loading" style="color:var(--bm-dim)">Order book unavailable</div>`;
   }
@@ -1100,8 +1240,8 @@ async function loadRecentTrades(itemId, type) {
   sec.innerHTML = '<div class="bm-panel-loading"><div class="bm-spinner"></div></div>';
   try {
     const pluralType = type === 'item' ? 'items' : 'cargo';
-    const data   = await apiFetch(`/market/${pluralType}/${itemId}/price-history`, { limit: 50, bucket: '1 hour' });
-    const trades = data.recentTrades || [];
+    const data   = await apiFetch(`/market/${pluralType}/${itemId}/price-history`, { limit: 50, bucket: '1 hour', ...getMarketParams() });
+    const trades = (data.recentTrades || []).filter(matchesFilter);
     if (!trades.length) { sec.innerHTML = '<div class="bm-panel-loading" style="color:var(--bm-dim)">No recent trades</div>'; return; }
     sec.innerHTML = `<div class="ob-hdr"><span>Time</span><span style="text-align:right">Price</span><span style="text-align:right">Qty</span></div>` +
       trades.slice(0,60).map(t => {
@@ -1118,9 +1258,8 @@ async function loadRecentTrades(itemId, type) {
 async function loadDeals() {
   const sec = document.getElementById('section-deals');
   try {
-    const data  = await apiFetch('/market/deals');
+    const data  = await apiFetch('/market/deals', getMarketParams());
     const deals = Array.isArray(data) ? data : (data.arbitrage || data.deals || []);
-    if (deals.length) dbg('deals[0] raw', deals[0]);
     if (!deals.length) { sec.innerHTML = '<div class="bm-panel-loading" style="color:var(--bm-dim)">No arbitrage deals found</div>'; return; }
     sec.innerHTML = deals.slice(0,20).map(d => {
       const name   = d.name || d.itemName || d.item?.name || 'Unknown';
@@ -1272,6 +1411,7 @@ document.querySelectorAll('.bm-rtab').forEach(btn => btn.addEventListener('click
   activeRightTab = btn.dataset.tab;
   document.querySelectorAll('.bm-section').forEach(s => s.classList.remove('active'));
   document.getElementById(`section-${activeRightTab}`).classList.add('active');
+  if (activeRightTab === 'favs') { renderFavouritesPanel(); return; }
   if (selectedItem) {
     if (activeRightTab === 'orderbook') loadOrderBook(selectedItem, selectedType);
     if (activeRightTab === 'trades')    loadRecentTrades(selectedItem, selectedType);
